@@ -1,8 +1,5 @@
 name := "magda-scala-common"
 
-resolvers += "Sonatype OSS Releases" at "https://oss.sonatype.org/content/repositories/releases"
-resolvers += "Sonatype OSS Staging" at "https://oss.sonatype.org/content/repositories/staging"
-resolvers += "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots"
 resolvers += "elasticsearch-releases" at "https://artifacts.elastic.co/maven"
 resolvers += "jitpack" at "https://jitpack.io"
 
