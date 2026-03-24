@@ -234,19 +234,54 @@ class AgentChain {
             const { queue } = input;
             try {
                 const tools = await createTools(input);
+
+                console.log(
+                    "TOOLS AVAILABLE:",
+                    tools.map((t) => t.name)
+                );
+
                 if (this.debug) {
                     console.log("available tools: ", tools);
                 }
-                const result = await this.model.invokeTool(
-                    input.question,
-                    tools,
-                    input
-                );
-                const value = result?.value;
-                if (typeof value === "undefined" || value === null) {
-                    return;
+
+                const maxSteps = 3;
+                let currentInput = input.question;
+                let lastResult: any = null;
+
+                for (let step = 0; step < maxSteps; step++) {
+                    const result = await this.model.invokeTool(
+                        currentInput,
+                        tools,
+                        input
+                    );
+
+                    if (!result) {
+                        return currentInput;
+                    }
+
+                    lastResult = result.value;
+
+                    currentInput = `
+                    User question: ${input.question}
+
+                    Tool result:
+                    ${JSON.stringify(lastResult)}
+                    `;
                 }
-                return `${value}`;
+
+                return typeof lastResult === "string"
+                    ? lastResult
+                    : lastResult?.value ?? JSON.stringify(lastResult);
+                // const result = await this.model.invokeTool(
+                //     input.question,
+                //     tools,
+                //     input
+                // );
+                // const value = result?.value;
+                // if (typeof value === "undefined" || value === null) {
+                //     return;
+                // }
+                // return `${value}`;
             } catch (e) {
                 queue.push(createChatEventMessageErrorMsg(e as Error));
                 return;
