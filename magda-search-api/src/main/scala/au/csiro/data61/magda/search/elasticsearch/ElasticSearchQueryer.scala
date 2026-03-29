@@ -791,12 +791,16 @@ class ElasticSearchQueryer(indices: Indices = DefaultIndices)(
       isDistributionQuery = true
     ).getOrElse(MatchAllQuery()) :: filterClauses
 
+    // kNN `filter` must narrow the ANN candidate set to the same constraints as
+    // `datasetFilterClauses` / `distributionFilterClauses` (tenant, publishing state,
+    // facets, and OPA auth). Using match-all here caused vector search to score across
+    // the full index before filtering — inefficient and risky for access control.
     val datasetFilterQuery =
-      if (datasetFilterClauses.isEmpty) boolQuery().must(datasetFilterClauses)
+      if (datasetFilterClauses.nonEmpty) boolQuery().must(datasetFilterClauses)
       else matchAllQuery()
 
     val distributionFilterQuery =
-      if (distributionFilterClauses.isEmpty)
+      if (distributionFilterClauses.nonEmpty)
         boolQuery().must(distributionFilterClauses)
       else matchAllQuery()
 
