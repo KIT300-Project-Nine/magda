@@ -644,6 +644,24 @@ class ElasticSearchQueryer(indices: Indices = DefaultIndices)(
       .scoreMode("sum")
   }
 
+  /**
+    * OpenSearch 2.19.x rejects kNN radial search (`min_score` / `max_distance`) when a `filter`
+    * is present ("[knn] requires exactly one of k, distance or score to be set"); top-`k` still works.
+    *
+    * @see [[https://github.com/opensearch-project/k-NN/issues/2836]]
+    */
+  private def hybridKnnRetrievalParams(
+      withFilter: Boolean
+  ): (Option[Int], Option[Double], Option[Double]) = {
+    val k = HybridSearchConfig.k
+    val minScore = HybridSearchConfig.minScore
+    val maxDistance = HybridSearchConfig.maxDistance
+    if (withFilter && k.isEmpty && (minScore.isDefined || maxDistance.isDefined))
+      (Some(ElasticSearchQueryer.KnnTopKWhenFilter), None, None)
+    else
+      (k, minScore, maxDistance)
+  }
+
   private def createInputTextQuery(
       inputText: String,
       inputTextVector: Option[Array[Double]],
@@ -705,6 +723,8 @@ class ElasticSearchQueryer(indices: Indices = DefaultIndices)(
     if (!hybridSearchEnabled) {
       dismax(queries).tieBreaker(0.2)
     } else {
+      val (dsK, dsMin, dsMax) = hybridKnnRetrievalParams(withFilter = true)
+      val (distK, distMin, distMax) = hybridKnnRetrievalParams(withFilter = true)
       dismax(
         Seq(
           HybridQuery(
@@ -714,9 +734,9 @@ class ElasticSearchQueryer(indices: Indices = DefaultIndices)(
                 field = HybridSearchConfig.queryContextVectorFieldName,
                 vector = inputTextVector.get,
                 filter = Some(datasetFilterQuery),
-                k = HybridSearchConfig.k,
-                minScore = HybridSearchConfig.minScore,
-                maxDistance = HybridSearchConfig.maxDistance,
+                k = dsK,
+                minScore = dsMin,
+                maxDistance = dsMax,
                 // boost score by 50 to match the boost we set for title field in keyword search
                 boost = Some(50.0)
               )
@@ -732,9 +752,9 @@ class ElasticSearchQueryer(indices: Indices = DefaultIndices)(
                     s"""distributions.${HybridSearchConfig.queryContextVectorFieldName}""",
                   vector = inputTextVector.get,
                   filter = Some(distributionFilterQuery),
-                  k = HybridSearchConfig.k,
-                  minScore = HybridSearchConfig.minScore,
-                  maxDistance = HybridSearchConfig.maxDistance
+                  k = distK,
+                  minScore = distMin,
+                  maxDistance = distMax
                 )
               )
             )
@@ -1197,6 +1217,9 @@ class ElasticSearchQueryer(indices: Indices = DefaultIndices)(
 }
 
 object ElasticSearchQueryer {
+
+  /** Default top-k for hybrid kNN when a filter is required (see `hybridKnnRetrievalParams`). */
+  private val KnnTopKWhenFilter = 200
 
   def apply(
       implicit
