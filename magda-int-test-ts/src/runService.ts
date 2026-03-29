@@ -122,14 +122,6 @@ process.on("beforeExit", async () => {
     await delay(1000);
 });
 
-async () => {
-    try {
-        await serviceRunner.create();
-    } catch (e) {
-        console.error(e);
-    }
-};
-
 serviceRunner.create().catch((e) => {
     console.error("Error when create services: " + e);
 });
