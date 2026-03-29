@@ -12,7 +12,7 @@
     "prebuild": "rimraf dist tsconfig.tsbuildinfo",
     "build": "yarn run compile",
     "compile": "tsc -b && ts-module-alias-transformer dist",
-    "test": "PGUSER=postgres mocha --timeout 100000",
+    "test": "PGUSER=postgres mocha --timeout 100000 \"src/tests/**/*.spec.ts\"",
     "run-service": "tsx ./src/runService.ts"
   },
   "devDependencies": {
@@ -48,10 +48,7 @@
     "uuid": "^8.2.0"
   },
   "mocha": {
-    "import": "tsx/esm",
-    "spec": [
-      "src/tests/**/*.spec.ts"
-    ]
+    "import": "tsx/esm"
   },
   "magda": {
     "language": "typescript",
