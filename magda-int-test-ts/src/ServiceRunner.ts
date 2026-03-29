@@ -17,6 +17,7 @@ import { DEFAULT_ADMIN_USER_ID } from "magda-typescript-common/src/authorization
 import urijs from "urijs";
 import { requireResolve } from "@magda/esm-utils";
 import { Readable } from "node:stream";
+import net from "node:net";
 import fetchRequest from "magda-typescript-common/src/fetchRequest.js";
 import treeKill from "magda-typescript-common/src/treeKill.js";
 
@@ -28,6 +29,107 @@ import treeKill from "magda-typescript-common/src/treeKill.js";
 function getMagdaModulePath(moduleName: string) {
     const pkgJsonPath = requireResolve(`${moduleName}/package.json`);
     return path.dirname(pkgJsonPath);
+}
+
+function parseJavaMajorFromVersionOutput(output: string): number | null {
+    const first = output.split("\n")[0] ?? output;
+    const m = first.match(/version "(?:1\.)?(\d+)/);
+    return m ? parseInt(m[1]!, 10) : null;
+}
+
+function javaExecutable(javaHome: string): string {
+    const bin = process.platform === "win32" ? "java.exe" : "java";
+    return path.join(javaHome, "bin", bin);
+}
+
+function javaMajorForHome(javaHome: string): number | null {
+    const javaBin = javaExecutable(javaHome);
+    if (!fs.existsSync(javaBin)) {
+        return null;
+    }
+    try {
+        const out = child_process.execSync(`"${javaBin}" -version 2>&1`, {
+            encoding: "utf-8"
+        });
+        return parseJavaMajorFromVersionOutput(out);
+    } catch {
+        return null;
+    }
+}
+
+function javaMajorOnPath(): number | null {
+    try {
+        const out = child_process.execSync("java -version 2>&1", {
+            encoding: "utf-8"
+        });
+        return parseJavaMajorFromVersionOutput(out);
+    } catch {
+        return null;
+    }
+}
+
+function brewOpenJdk11Homes(): string[] {
+    if (process.platform !== "darwin") {
+        return [];
+    }
+    return [
+        "/opt/homebrew/opt/openjdk@11/libexec/openjdk.jdk/Contents/Home",
+        "/usr/local/opt/openjdk@11/libexec/openjdk.jdk/Contents/Home"
+    ];
+}
+
+/**
+ * sbt 1.x / Magda Scala services require JDK 11; JDK 17+ fails on SecurityManager in the launcher.
+ */
+function ensureJdk11ForSbt(): void {
+    if (process.env.JAVA_HOME) {
+        const v = javaMajorForHome(process.env.JAVA_HOME);
+        if (v === 11) {
+            return;
+        }
+    }
+    if (javaMajorOnPath() === 11) {
+        return;
+    }
+    for (const home of brewOpenJdk11Homes()) {
+        if (javaMajorForHome(home) === 11) {
+            process.env.JAVA_HOME = home;
+            console.log(
+                `JAVA_HOME set to ${home} for sbt (JDK 11 required; prior JAVA_HOME was not 11).`
+            );
+            return;
+        }
+    }
+    throw new Error(
+        "JDK 11 is required for Magda sbt services (registry, indexer, search). " +
+            "Install OpenJDK 11 (e.g. `brew install openjdk@11` on macOS) and set JAVA_HOME, or put JDK 11 first on PATH."
+    );
+}
+
+function probeTcpBind(port: number, host: string): Promise<boolean> {
+    return new Promise((resolve) => {
+        const srv = net.createServer();
+        srv.once("error", (err: NodeJS.ErrnoException) => {
+            srv.close();
+            resolve(err.code === "EADDRINUSE");
+        });
+        srv.listen({ port, host, exclusive: true }, () => {
+            srv.close(() => resolve(false));
+        });
+    });
+}
+
+/**
+ * True if something is already listening (Express auth binds `::` by default; checking only 127.0.0.1 misses that).
+ */
+async function tcpPortInUse(port: number): Promise<boolean> {
+    if (await probeTcpBind(port, "::")) {
+        return true;
+    }
+    if (await probeTcpBind(port, "0.0.0.0")) {
+        return true;
+    }
+    return false;
 }
 
 /**
@@ -180,9 +282,73 @@ export default class ServiceRunner {
         this.dockerServiceForwardHost = hostname;
     }
 
+    /**
+     * Fail fast if a previous run-service, sbt, or overlapping mocha suite is still listening.
+     * Avoids confusing BindException / EADDRINUSE cascades and bogus JWT errors.
+     */
+    private async assertIntegrationListenPortsFree(): Promise<void> {
+        const ports = new Set<number>();
+        if (this.enableAuthService) {
+            ports.add(6104);
+            ports.add(8181);
+        }
+        if (this.enableRegistryApi) {
+            ports.add(6101);
+        }
+        if (this.enableStorageApi) {
+            ports.add(9000);
+            ports.add(6121);
+        }
+        const needsSearchStack =
+            this.enableElasticSearch ||
+            this.enableSearchApi ||
+            this.enableIndexer;
+        if (needsSearchStack) {
+            ports.add(9200);
+            ports.add(6103);
+        }
+        if (
+            this.enableEmbeddingApi ||
+            this.enableSearchApi ||
+            this.enableIndexer
+        ) {
+            ports.add(3000);
+        }
+        if (this.enableSearchApi) {
+            ports.add(6102);
+        }
+        const sorted = [...ports].sort((a, b) => a - b);
+        const busy: number[] = [];
+        for (const p of sorted) {
+            if (await tcpPortInUse(p)) {
+                busy.push(p);
+            }
+        }
+        if (busy.length) {
+            const hint = busy
+                .map((p) => `lsof -nP -iTCP:${p} -sTCP:LISTEN`)
+                .join("\n  ");
+            throw new Error(
+                `Magda integration ports already in use: ${busy.join(", ")}. ` +
+                    `Stop leftover run-service / sbt (registry, indexer, search) / node auth processes, or wait for the previous mocha suite to finish teardown.\n` +
+                    `  ${hint}`
+            );
+        }
+    }
+
     async create() {
         try {
             await this.docker.info();
+
+            await this.assertIntegrationListenPortsFree();
+
+            if (
+                this.enableRegistryApi ||
+                this.enableIndexer ||
+                this.enableSearchApi
+            ) {
+                ensureJdk11ForSbt();
+            }
 
             if (this.enableAuthService) {
                 await Promise.all([this.createOpa(), this.createPostgres()]);
@@ -220,8 +386,15 @@ export default class ServiceRunner {
     async destroy() {
         await this.destroyAllPortForward();
         for (const file of this.tmpFiles) {
-            fs.unlinkSync(file);
+            try {
+                if (fs.existsSync(file)) {
+                    fs.unlinkSync(file);
+                }
+            } catch (e) {
+                console.warn(`Could not remove temp file ${file}: ${e}`);
+            }
         }
+        this.tmpFiles = [];
         await Promise.all([
             this.destroyAuthApi(),
             this.destroyPostgres(),
@@ -561,7 +734,12 @@ export default class ServiceRunner {
         return new Promise<void>((resolve, reject) => {
             const aspectMigratorProcess = child_process.fork(
                 aspectMigratorExecute,
-                ["--jwtSecret", this.jwtSecret],
+                [
+                    "--jwtSecret",
+                    this.jwtSecret,
+                    "--userId",
+                    DEFAULT_ADMIN_USER_ID
+                ],
                 {
                     cwd: path.resolve(
                         this.workspaceRoot,
@@ -569,7 +747,10 @@ export default class ServiceRunner {
                     ),
                     stdio: "inherit",
                     env: {
-                        USER_ID: DEFAULT_ADMIN_USER_ID
+                        ...process.env,
+                        USER_ID: DEFAULT_ADMIN_USER_ID,
+                        // Must match registry JVM (`createRegistryApi`); avoids migrator picking up a different JWT_SECRET from the shell.
+                        JWT_SECRET: this.jwtSecret
                     }
                 }
             );
@@ -655,6 +836,7 @@ export default class ServiceRunner {
             throw e;
         }
 
+        await delay(3000);
         await this.runAspectMigrator();
     }
 
@@ -691,8 +873,11 @@ export default class ServiceRunner {
             {
                 stdio: "inherit",
                 env: {
+                    ...process.env,
                     PGUSER: "client",
-                    PGPASSWORD: "password"
+                    PGPASSWORD: "password",
+                    JWT_SECRET: this.jwtSecret,
+                    USER_ID: DEFAULT_ADMIN_USER_ID
                 }
             }
         );
@@ -1046,14 +1231,15 @@ export default class ServiceRunner {
                         );
                     }
                     const data = await res.json();
-                    if (data?.status !== "green") {
+                    // Single-node OpenSearch/ES is often `yellow` (unassigned replicas).
+                    if (data?.status !== "green" && data?.status !== "yellow") {
                         throw new Error(
                             `The cluster is in ${data?.status} status.`
                         );
                     }
                     return true;
                 },
-                60000
+                180000
             );
             if (this.dockerServiceForwardHost) {
                 await this.createPortForward(9200);
@@ -1124,7 +1310,7 @@ export default class ServiceRunner {
         this.indexerSetupProcess = indexerSetupProcess;
 
         indexerSetupProcess.on("exit", (code, signal) => {
-            this.registryApiProcess = undefined;
+            this.indexerSetupProcess = undefined;
             console.log(
                 `Indexer setup process exited with code ${code} or signal ${signal}`
             );
