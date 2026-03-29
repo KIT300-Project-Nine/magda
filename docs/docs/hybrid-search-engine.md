@@ -29,3 +29,13 @@ By default, the hybrid search engine is enabled. You can disable this feature by
 There are additional configuration options that allow you to fine-tune the performance of the search engine. You can find relevant configuration options in [common.conf](../../magda-scala-common/src/main/resources/common.conf). You can update configuration values via the `appConfig` field in both the [indexer](../../deploy/helm/internal-charts/indexer/README.md) and [search API](../../deploy/helm/internal-charts/search-api/README.md) Helm chart configurations.
 
 > **Note:** You must set the same configuration values for both the [indexer](../../deploy/helm/internal-charts/indexer/README.md) and [search API](../../deploy/helm/internal-charts/search-api/README.md) Helm charts.
+
+---
+
+### Access control and kNN filters
+
+Hybrid search issues an OpenSearch kNN query for `queryContextVector` (and per-distribution vectors under `distributions`). The kNN `filter` uses the same constraints as the main bool query: tenant id, publishing state, user-selected facets (publisher, format, date, region), and OPA auth decisions translated to Elasticsearch DSL for datasets and distributions. That way approximate nearest-neighbour retrieval only considers documents the caller is permitted to see, instead of ranking the whole index and relying on post-filtering alone.
+
+### Indexing when the embedding API is unavailable
+
+The indexer calls the embedding service with retries (see `embeddingApi.*` in `common.conf`). If all retries fail, the dataset is still indexed **without** `queryContext` / `queryContextVector` fields so lexical search keeps working; those records only participate in the keyword leg of hybrid search until a later successful reindex populates vectors.
