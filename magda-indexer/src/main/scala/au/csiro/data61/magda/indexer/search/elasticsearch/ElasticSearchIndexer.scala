@@ -878,11 +878,22 @@ class ElasticSearchIndexer(
       }
 
     // only generate embedding when hybrid search is on
-    (if (HybridSearchConfig.enabled) {
-       fillDatasetWithQueryContext(dataSet)
-     } else {
-       Future(dataSet)
-     }).map { datasetWithContext =>
+    val datasetWithContextFuture =
+      if (HybridSearchConfig.enabled) {
+        fillDatasetWithQueryContext(dataSet).recover {
+          case e: Throwable =>
+            logger.warning(
+              "Embedding API failed for dataset [{}] after retries ({}); indexing without queryContext vectors (lexical-only for this record until reindexed)",
+              dataSet.identifier,
+              e.getMessage
+            )
+            dataSet
+        }
+      } else {
+        Future.successful(dataSet)
+      }
+
+    datasetWithContextFuture.map { datasetWithContext =>
       val documentId =
         DataSet.uniqueEsDocumentId(rawDataSet.identifier, rawDataSet.tenantId)
       val indexDataSet = ElasticDsl
