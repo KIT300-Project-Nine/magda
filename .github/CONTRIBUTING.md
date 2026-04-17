@@ -10,8 +10,8 @@ If you're writing code then you'll want to run through [the building and running
 
 How you contribute will depend on your relationship to the project:
 
--   Core team - i.e. you're contributing a significant amount of time per week, probably as part of your job at Data61 (although we're very keen to collaborate with other organisations!)
--   External Contributor - i.e. you're using Magda and want to contribute features or bug fixes on a more casual basis - outside of our sprints.
+- Core team - i.e. you're contributing a significant amount of time per week, probably as part of your job at Data61 (although we're very keen to collaborate with other organisations!)
+- External Contributor - i.e. you're using Magda and want to contribute features or bug fixes on a more casual basis - outside of our sprints.
 
 ## Core Team Members
 
@@ -51,11 +51,11 @@ We don't expect people outside the core team to go through the same process as c
 
 # Standards
 
--   Where practical, changes should be accompanied by unit tests. Unfortunately there's still a lot of untested code in the code base - if you're modifying untested code, try to at least write tests to test _what you've changed_.
-    -   The front-end is (currently) an exception to this as it's still very experimental
--   Javascript/Typescript must be formatted with [Prettier](https://github.com/prettier/prettier), Scala should be formatted with [Scalariform](https://github.com/scala-ide/scalariform).
--   All contributors should be listed in CONTRIBUTORS.md - in your first PR, please make sure you've added yourself!
--   All changes should be recorded as a bullet point in CHANGES.md, as part of the PR that made those changes.
+- Where practical, changes should be accompanied by unit tests. Unfortunately there's still a lot of untested code in the code base - if you're modifying untested code, try to at least write tests to test _what you've changed_.
+  - The front-end is (currently) an exception to this as it's still very experimental
+- Javascript/Typescript must be formatted with [Prettier](https://github.com/prettier/prettier), Scala should be formatted with [Scalariform](https://github.com/scala-ide/scalariform).
+- All contributors should be listed in CONTRIBUTORS.md - in your first PR, please make sure you've added yourself!
+- All changes should be recorded as a bullet point in CHANGES.md, as part of the PR that made those changes.
 
 # Release Cycle
 
