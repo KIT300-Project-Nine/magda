@@ -4,7 +4,7 @@ In the latest Edge release for MacOS, Docker have included a local kubernetes cl
 
 Download and install:
 
--   [Docker for Mac Edge Client](https://docs.docker.com/docker-for-mac/install/#download-docker-for-mac)
+- [Docker for Mac Edge Client](https://docs.docker.com/docker-for-mac/install/#download-docker-for-mac)
 
 Make sure you get the EDGE client - as of the time of writing Kubernetes isn't in the stable client.
 

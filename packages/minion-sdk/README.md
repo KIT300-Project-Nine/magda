@@ -16,27 +16,27 @@ const MINION_ID = "minion-format";
 const argv = commonYargs(6311, "http://localhost:6311");
 
 const aspectDefinition = {
-    id: "dataset-format",
-    name: "Details about the format of the distribution",
-    jsonSchema: require("@magda/registry-aspects/dataset-format.schema.json")
+  id: "dataset-format",
+  name: "Details about the format of the distribution",
+  jsonSchema: require("@magda/registry-aspects/dataset-format.schema.json")
 };
 
 // --- will be called when changes are made to records in magda registry
 async function onRecordFound(record, authorizedRegistryClient) {
-    // --- adding logic of based on the current record data, create / update extra data and save back to registry via `authorizedRegistryClient`
+  // --- adding logic of based on the current record data, create / update extra data and save back to registry via `authorizedRegistryClient`
 }
 
 minion({
-    argv,
-    // --- monitor `dcat-distribution-strings` aspect
-    aspects: ["dcat-distribution-strings"],
-    async: true,
-    id: MINION_ID,
-    onRecordFound,
-    optionalAspects: [],
-    writeAspectDefs: [aspectDefinition]
+  argv,
+  // --- monitor `dcat-distribution-strings` aspect
+  aspects: ["dcat-distribution-strings"],
+  async: true,
+  id: MINION_ID,
+  onRecordFound,
+  optionalAspects: [],
+  writeAspectDefs: [aspectDefinition]
 }).catch((e: Error) => {
-    console.error("Error: " + e.message, e);
-    process.exit(1);
+  console.error("Error: " + e.message, e);
+  process.exit(1);
 });
 ```

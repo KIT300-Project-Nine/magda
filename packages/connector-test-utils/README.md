@@ -4,16 +4,16 @@ The package includes the following utilities for writing [Magda connector](https
 
 ```typescript
 export declare abstract class MockExpressServer {
-    server: any;
-    run(port: number): Promise<unknown>;
-    abstract runImplementation(app: any): void;
+  server: any;
+  run(port: number): Promise<unknown>;
+  abstract runImplementation(app: any): void;
 }
 
 export declare class MockRegistry extends MockExpressServer {
-    aspects: any;
-    records: any;
-    env: any;
-    runImplementation(registry: any): void;
+  aspects: any;
+  records: any;
+  env: any;
+  runImplementation(registry: any): void;
 }
 
 /**
@@ -21,8 +21,8 @@ export declare class MockRegistry extends MockExpressServer {
  * testing.
  */
 export declare function runConnectorTest(
-    TEST_CASES: any[],
-    Catalog: any,
-    options?: any
+  TEST_CASES: any[],
+  Catalog: any,
+  options?: any
 ): void;
 ```
