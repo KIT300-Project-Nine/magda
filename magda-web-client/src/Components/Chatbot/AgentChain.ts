@@ -66,6 +66,7 @@ class AgentChain {
     public loadProgress?: InitProgressReport;
     private loadProgressCallback?: InitProgressCallback;
     public chatHistory: BaseMessage[] = [];
+    public agentMessages: { role: string; content: string }[] = [];
     public navHistory: History;
     public navLocation: Location;
     public appName: string;
@@ -169,8 +170,11 @@ class AgentChain {
     }
 
     async stream(question: string): Promise<AsyncIterable<ChatEventMessage>> {
+        this.agentMessages.push({
+            role: "user",
+            content: question
+        });
         const queue = new AsyncQueue<ChatEventMessage>();
-        const msgId = uuidv4();
         const input: ChainInput = {
             question,
             queue,
@@ -243,18 +247,9 @@ class AgentChain {
                 );
 
                 //start with initial question
-                let currentMessages: any[] = [
-                    { role: "user", content: input.question }
-                ];
+                let currentMessages: any[] = [...this.agentMessages];
 
                 for (let step = 0; step < maxSteps; step++) {
-                    queue.push({
-                        type: EVENT_TYPE_PARTIAL_MSG,
-                        payload: {
-                            msg: `\n*Thought: Step ${step + 1}...*\n`
-                        }
-                    } as any);
-
                     const result = await this.model.invokeTool(
                         currentMessages,
                         tools,
@@ -265,6 +260,13 @@ class AgentChain {
 
                     //We are done if it's a conversational response
                     if (result.name === "Conversational Response") {
+                        this.agentMessages.push({
+                            role: "assistant",
+                            content: result.value
+                        });
+
+                        this.agentMessages = this.agentMessages.slice(-10);
+
                         return result.value;
                     }
 
@@ -279,6 +281,8 @@ class AgentChain {
                             result.name
                         } returned: ${JSON.stringify(result.value)}`
                     });
+
+                    console.log("AGENT MESSAGES:", this.agentMessages);
                 }
 
                 return "Maximum steps reached without a final answer";
