@@ -1055,7 +1055,7 @@ export default class ServiceRunner {
                     }
                     return true;
                 },
-                60000
+                this.maxWaitLiveTime
             );
             if (this.dockerServiceForwardHost) {
                 await this.createPortForward(9200);
