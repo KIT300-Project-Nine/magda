@@ -111,6 +111,17 @@ kubectl describe pod -n magda <pod-name>
 kubectl logs -n magda <pod-name>
 ```
 
+## Quick validation checklist
+
+Run these in order after deployment:
+
+```bash
+kubectl get pods -n magda
+kubectl get deploy -n magda
+kubectl port-forward -n magda svc/search-api 6102:80
+curl "http://127.0.0.1:6102/v0/status/live"
+```
+
 To tear down:
 
 ```bash
