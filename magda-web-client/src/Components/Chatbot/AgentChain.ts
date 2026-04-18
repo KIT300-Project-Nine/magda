@@ -234,54 +234,46 @@ class AgentChain {
             const { queue } = input;
             try {
                 const tools = await createTools(input);
+                const maxSteps = 5;
 
                 console.log(
                     "TOOLS AVAILABLE:",
                     tools.map((t) => t.name)
                 );
 
-                if (this.debug) {
-                    console.log("available tools: ", tools);
-                }
-
-                const maxSteps = 3;
-                let currentInput = input.question;
-                let lastResult: any = null;
+                //start with initial question
+                let currentMessages: any[] = [
+                    { role: "user", content: input.question }
+                ];
 
                 for (let step = 0; step < maxSteps; step++) {
                     const result = await this.model.invokeTool(
-                        currentInput,
+                        currentMessages,
                         tools,
                         input
                     );
 
-                    if (!result) {
-                        return currentInput;
+                    if (!result) return;
+
+                    //We are done if it's a conversational response
+                    if (result.name === "Conversational Response") {
+                        return result.value;
                     }
 
-                    lastResult = result.value;
+                    currentMessages.push({
+                        role: "assistant",
+                        content: `I will use the ${result.name} tool.`
+                    });
 
-                    currentInput = `
-                    User question: ${input.question}
-
-                    Tool result:
-                    ${JSON.stringify(lastResult)}
-                    `;
+                    currentMessages.push({
+                        role: "user",
+                        content: `Tool ${
+                            result.name
+                        } returned: ${JSON.stringify(result.value)}`
+                    });
                 }
 
-                return typeof lastResult === "string"
-                    ? lastResult
-                    : lastResult?.value ?? JSON.stringify(lastResult);
-                // const result = await this.model.invokeTool(
-                //     input.question,
-                //     tools,
-                //     input
-                // );
-                // const value = result?.value;
-                // if (typeof value === "undefined" || value === null) {
-                //     return;
-                // }
-                // return `${value}`;
+                return "Maximum steps reached without a final answer";
             } catch (e) {
                 queue.push(createChatEventMessageErrorMsg(e as Error));
                 return;
