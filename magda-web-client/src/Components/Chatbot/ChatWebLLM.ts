@@ -305,8 +305,12 @@ export default class ChatWebLLM extends SimpleChatModel<WebLLMCallOptions> {
         return chunks.join("");
     }
 
+    //allow for arrays to be handled
     async invokeTool<T = any>(
-        userMessage: webllm.ChatCompletionUserMessageParam | string,
+        userMessage:
+            | webllm.ChatCompletionUserMessageParam
+            | string
+            | webllm.ChatCompletionMessageParam[],
         tools: WebLLMTool[],
         thisObj: any = undefined
     ): Promise<WebLLMToolCallResult<T> | undefined> {
@@ -358,12 +362,14 @@ GUIDELINES:
                       }
                   ]
                 : Array.isArray(userMessage)
-                ? userMessage
-                : [userMessage];
+                ? ((userMessage as unknown) as webllm.ChatCompletion[])
+                : [
+                      (userMessage as unknown) as webllm.ChatCompletionAssistantMessageParam
+                  ];
 
         // Filter out any existing system messages to ensure magdaIdentity is the only one and is first
         const userMessagesFiltered = messages.filter(
-            (m) => m?.role !== "system"
+            (m) => "role" in m && m.role !== "system"
         );
 
         const request: webllm.ChatCompletionRequest = {
