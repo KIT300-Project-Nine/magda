@@ -361,4 +361,43 @@ describe("indexEmbeddingText", () => {
         expect(chunker.chunk.callCount).to.equal(11);
         expect(opensearchApiClient.deleteByQuery.callCount).to.equal(1);
     });
+
+    it("should respect explicit bulk index size configuration", async () => {
+        testEnv.chunker.chunk.returns([
+            { text: "a", length: 1, position: 0, overlap: 0 },
+            { text: "b", length: 1, position: 1, overlap: 0 },
+            { text: "c", length: 1, position: 2, overlap: 0 }
+        ]);
+        testEnv.embeddingApiClient.get.resolves([
+            [0.1, 0.2, 0.3],
+            [0.4, 0.5, 0.6],
+            [0.7, 0.8, 0.9]
+        ]);
+
+        const config = testEnv.updateUserConfig({
+            itemType: "storageObject",
+            formatTypes: ["txt"]
+        });
+        config.argv.semanticIndexerConfig.bulkEmbeddingsSize = 3;
+        config.argv.semanticIndexerConfig.bulkIndexSize = 2;
+
+        await indexEmbeddingText({
+            options: config,
+            embeddingText: { text: "abc" },
+            chunker: testEnv.chunker,
+            embeddingApiClient: testEnv.embeddingApiClient,
+            opensearchApiClient: testEnv.opensearchApiClient,
+            metadata: {
+                recordId: "bulk-index-config-id",
+                fileFormat: "txt"
+            }
+        });
+
+        testEnv.expectSuccessCalls({
+            chunkCallCount: 1,
+            embeddingApiCallCount: 1,
+            bulkIndexCallCount: 2,
+            deleteByQueryCallCount: 1
+        });
+    });
 });
