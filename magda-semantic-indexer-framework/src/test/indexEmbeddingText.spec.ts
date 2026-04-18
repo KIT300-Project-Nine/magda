@@ -429,4 +429,33 @@ describe("indexEmbeddingText", () => {
             "No text or subObjects found to index."
         );
     });
+
+    it("should generate subObjectId when a subObject id is missing", async () => {
+        testEnv.chunker.chunk.returns([
+            { text: "table text", length: 10, position: 0, overlap: 0 }
+        ]);
+        testEnv.embeddingApiClient.get.resolves([[0.1, 0.2, 0.3]]);
+        const config = testEnv.updateUserConfig({
+            itemType: "storageObject",
+            formatTypes: ["csv"]
+        });
+
+        await indexEmbeddingText({
+            options: config,
+            embeddingText: {
+                subObjects: [{ subObjectType: "table", text: "table text" }]
+            } as any,
+            chunker: testEnv.chunker,
+            embeddingApiClient: testEnv.embeddingApiClient,
+            opensearchApiClient: testEnv.opensearchApiClient,
+            metadata: {
+                recordId: "generated-sub-id",
+                fileFormat: "csv"
+            }
+        });
+
+        const indexedDoc = testEnv.getIndexedDocs(0)[0];
+        expect(indexedDoc.subObjectId).to.be.a("string");
+        expect(indexedDoc.subObjectId.length).to.be.greaterThan(0);
+    });
 });
