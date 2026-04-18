@@ -6,6 +6,7 @@ import { ChainInput } from "../commons";
 import { runQuery } from "../../../libs/sqlUtils";
 import { WebLLMTool } from "../ChatWebLLM";
 import { createQueryDataFilesWithSQLQueryTool } from "./queryDataFilesWithSQLQuery";
+import toYaml from "libs/toYaml";
 
 const SUPPORT_FORMATS = ["CSV-GEO-AU", "CSV"];
 
@@ -57,33 +58,25 @@ export async function createQueryDatasetTool(
                     "Please wait... "
             )
         );
-        const queryDataFilesWithSQLTool = await createQueryDataFilesWithSQLQueryTool(
-            this,
-            dists
-        );
-        const endConversationTool = {
-            name: "endConversationTool",
-            func: () =>
-                "Sorry. After examining data files, I didn't find any data relevant to your inquiry.",
-            description:
-                "When you can find any other tools that are useful to answer the user inquiry, you should call this tool to end the conversation."
-        };
-        const tools = [queryDataFilesWithSQLTool, endConversationTool];
-        try {
-            const result = await this.model.invokeTool(
-                this.question,
-                tools,
-                this
-            );
-            const value = result?.value;
-            if (typeof value === "undefined" || value === null) {
-                return;
+
+        const fileSchemas: string[] = [];
+
+        for (const item of dists) {
+            const columns = await getDistColumnNames(item.idx);
+            if (columns) {
+                fileSchemas.push(
+                    toYaml({
+                        fileIndex: item.idx,
+                        title: item.dist.title,
+                        columns: columns
+                    })
+                );
             }
-            return `${value}`;
-        } catch (e) {
-            this.queue.push(createChatEventMessageErrorMsg(e as Error));
-            return;
         }
+
+        return `I found the following files and columns in this dataset:\n\n${fileSchemas.join(
+            "\n---\n"
+        )}\n\nYou can now use the executeSQLQuery tool to query these files using source(fileIndex).`;
     }
     return {
         // note: this tool doesn't take the actual SQL query. We mainly need to fetch column information in this tool.
