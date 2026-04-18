@@ -29,7 +29,6 @@ class BuildDocumentTransform extends Transform {
             embeddingApiClient: EmbeddingApiClient;
             bulkEmbeddingsSize: number;
             totalChunks: number;
-            text: string;
             metadata: Metadata;
             indexingStartTime: string;
         }
@@ -202,6 +201,7 @@ export async function indexEmbeddingText({
         }
     }
 
+    const indexingStartTime = new Date().toISOString();
     await Promise.all(
         textsToProcess.map((item) =>
             processSingleText({
@@ -210,9 +210,21 @@ export async function indexEmbeddingText({
                 embeddingApiClient,
                 opensearchApiClient,
                 metadata: item.metadata,
-                text: item.text
+                text: item.text,
+                indexingStartTime
             })
         )
+    );
+
+    const semanticIndexerConfig = options.argv.semanticIndexerConfig;
+    await deleteOldDocuments(
+        opensearchApiClient,
+        semanticIndexerConfig.fullIndexName,
+        options.id,
+        metadata.recordId,
+        indexingStartTime,
+        options.timeout || "1m",
+        3
     );
 }
 
@@ -222,7 +234,8 @@ async function processSingleText({
     embeddingApiClient,
     opensearchApiClient,
     metadata,
-    text
+    text,
+    indexingStartTime
 }: {
     options: SemanticIndexerOptions;
     chunker: Chunker;
@@ -230,10 +243,12 @@ async function processSingleText({
     opensearchApiClient: OpensearchApiClient;
     metadata: Metadata;
     text: string;
+    indexingStartTime: string;
 }) {
     const semanticIndexerConfig = options.argv.semanticIndexerConfig;
     const bulkEmbeddingsSize = semanticIndexerConfig.bulkEmbeddingsSize || 50;
-    const bulkIndexSize = semanticIndexerConfig.bulkIndexSize || 1;
+    const bulkIndexSize =
+        semanticIndexerConfig.bulkIndexSize || bulkEmbeddingsSize;
     const indexName = semanticIndexerConfig.fullIndexName;
 
     const chunks = await chunker.chunk(text);
@@ -241,14 +256,12 @@ async function processSingleText({
         throw new SkipError("No chunks generated from text.");
     }
 
-    const indexingStartTime = new Date().toISOString();
     const textChunkStream = Readable.from(chunks, { objectMode: true });
     const buildDocumentTransform = new BuildDocumentTransform({
         options,
         embeddingApiClient,
         bulkEmbeddingsSize,
         totalChunks: chunks.length,
-        text,
         metadata,
         indexingStartTime
     });
@@ -265,15 +278,6 @@ async function processSingleText({
             openSearchStream
         );
 
-        await deleteOldDocuments(
-            opensearchApiClient,
-            indexName,
-            options.id,
-            metadata.recordId,
-            indexingStartTime,
-            options.timeout || "1m",
-            3
-        );
     } catch (error) {
         throw new SkipError(
             `Failed to index documents: ${(error as Error).message}`
