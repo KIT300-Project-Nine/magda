@@ -29,5 +29,11 @@ dependencies:
 - name: magda-function-esri-url-processor
   repository: oci://ghcr.io/magda-io/charts
   version: 2.0.0
-digest: sha256:40cd523ac5632f738e8f7f41df7cada91b2780fb8fd8d3d21fb236d22d80f574
-generated: "2025-12-24T00:45:36.839728248Z"
+- name: magda-pdf-semantic-indexer
+  repository: oci://ghcr.io/magda-io/charts
+  version: 1.0.0-alpha.1
+- name: magda-csv-semantic-indexer
+  repository: oci://ghcr.io/magda-io/charts
+  version: 1.0.0-alpha.0
+digest: sha256:b291d7d95acfbf2ddafbe9c9c4919278613d66719ead6559550a9f94f1839f90
+generated: "2026-04-18T15:11:55.93708+03:00"
