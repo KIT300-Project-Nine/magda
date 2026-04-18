@@ -238,6 +238,8 @@ class AgentChain {
         return RunnableLambda.from(async (input: ChainInput) => {
             const { queue } = input;
             try {
+                console.log("[Magda][chain] STEP START");
+
                 const tools = await createTools(input);
                 const maxSteps = 5;
 
@@ -250,6 +252,12 @@ class AgentChain {
                 let currentMessages: any[] = [...this.agentMessages];
 
                 for (let step = 0; step < maxSteps; step++) {
+                    console.log("[Magda][chain] step:", step);
+                    console.log(
+                        "[Magda][chain] currentMessages:",
+                        currentMessages
+                    );
+
                     const result = await this.model.invokeTool(
                         currentMessages,
                         tools,
@@ -271,9 +279,13 @@ class AgentChain {
                     }
 
                     currentMessages.push({
-                        role: "assistant",
-                        content: `I will use the ${result.name} tool.`
+                        role: "user",
+                        content: `Tool ${
+                            result.name
+                        } returned: ${JSON.stringify(result.value)}`
                     });
+
+                    console.log("[Magda][chain TOOL RESULT]:", result);
 
                     currentMessages.push({
                         role: "user",
@@ -281,6 +293,9 @@ class AgentChain {
                             result.name
                         } returned: ${JSON.stringify(result.value)}`
                     });
+
+                    console.log("[Magda][chain TOOL USED]:", result.name);
+                    console.log("[Magda][chain TOOL OUTPUT]:", result.value);
 
                     console.log("AGENT MESSAGES:", this.agentMessages);
                 }
