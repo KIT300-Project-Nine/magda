@@ -30,7 +30,7 @@ async function retrieveDatasets(question: string, limit: number = 5) {
             uiBaseUrl === "/"
                 ? `/dataset/${datasetId}`
                 : `${uiBaseUrl}/dataset/${datasetId}`
-        })`;
+        }) (ID: ${item.identifier})`;
         return [title, desc];
     });
 
@@ -48,7 +48,8 @@ const searchDatasets: WebLLMTool = {
     },
     description:
         "This tool can be used to search datasets relevant to the user's inquiry and present the dataset list to user as the answer. You must use this call when there is no better tool to use." +
-        "You should generate one or more keywords or a sentence on the user inquiry and supply as the compulsory `queryString` parameter.",
+        "You should generate one or more keywords or a sentence on the user inquiry and supply as the compulsory `queryString` parameter." +
+        "If a dataset looks relevant, you should use its ID with the 'queryDataset' tool to explore its files",
     parameters: [
         {
             name: "queryString",

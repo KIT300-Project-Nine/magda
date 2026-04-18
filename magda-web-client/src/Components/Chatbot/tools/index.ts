@@ -7,24 +7,19 @@ import { createPresentPreviousQueryResultAsChartTool } from "./presentPreviousQu
 
 async function createTools(input: ChainInput): Promise<WebLLMTool[]> {
     const type = getLocationType(input.location);
-    switch (type) {
-        case "DATASET_PAGE":
-            return [
-                await createQueryDatasetTool(input),
-                await createPresentPreviousQueryResultAsChartTool(input),
-                searchDatasets,
-                defaultAgent
-            ].filter((item) => !!item) as WebLLMTool[];
-        case "DISTRIBUTION_PAGE":
-            return [
-                await createQueryDatasetTool(input),
-                await createPresentPreviousQueryResultAsChartTool(input),
-                searchDatasets,
-                defaultAgent
-            ].filter((item) => !!item) as WebLLMTool[];
-        default:
-            return [searchDatasets, defaultAgent];
+
+    const tools: (WebLLMTool | null)[] = [searchDatasets, defaultAgent];
+
+    if (
+        type === "DATASET_PAGE" ||
+        type === "DISTRIBUTION_PAGE" ||
+        input.dataset
+    ) {
+        tools.push(await createQueryDatasetTool(input));
+        tools.push(await createPresentPreviousQueryResultAsChartTool(input));
     }
+
+    return tools.filter((item) => !!item) as WebLLMTool[];
 }
 
 export default createTools;
