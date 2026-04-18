@@ -170,6 +170,7 @@ class AgentChain {
 
     async stream(question: string): Promise<AsyncIterable<ChatEventMessage>> {
         const queue = new AsyncQueue<ChatEventMessage>();
+        const msgId = uuidv4();
         const input: ChainInput = {
             question,
             queue,
@@ -247,6 +248,13 @@ class AgentChain {
                 ];
 
                 for (let step = 0; step < maxSteps; step++) {
+                    queue.push({
+                        type: EVENT_TYPE_PARTIAL_MSG,
+                        payload: {
+                            msg: `\n*Thought: Step ${step + 1}...*\n`
+                        }
+                    } as any);
+
                     const result = await this.model.invokeTool(
                         currentMessages,
                         tools,
