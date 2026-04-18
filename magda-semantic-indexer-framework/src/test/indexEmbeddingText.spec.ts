@@ -1,5 +1,7 @@
 import { indexEmbeddingText } from "../indexEmbeddingText.js";
 import { BaseSemanticIndexerTest } from "./BaseSemanticIndexerTest.js";
+import sinon from "sinon";
+import { expect } from "chai";
 
 describe("indexEmbeddingText", () => {
     let testEnv: BaseSemanticIndexerTest;
@@ -196,7 +198,7 @@ describe("indexEmbeddingText", () => {
             chunkCallCount: 3,
             embeddingApiCallCount: 3,
             bulkIndexCallCount: 3,
-            deleteByQueryCallCount: 3
+            deleteByQueryCallCount: 1
         });
 
         const expectedDocs = [
@@ -257,5 +259,106 @@ describe("indexEmbeddingText", () => {
         testEnv.expectIndexedDocs(expectedDocs, 0);
         testEnv.expectIndexedDocs(expectedSubObjectDocs1, 1);
         testEnv.expectIndexedDocs(expectedSubObjectDocs2, 2);
+    });
+
+    it("should default bulk index size to embedding batch size", async () => {
+        const embeddingTextResult = {
+            text: "long text that needs multiple chunks"
+        };
+        testEnv.chunker.chunk.returns([
+            { text: "long text", length: 9, position: 0, overlap: 2 },
+            { text: "text that", length: 9, position: 7, overlap: 2 },
+            { text: "that needs", length: 10, position: 14, overlap: 2 }
+        ]);
+        testEnv.embeddingApiClient.get.resolves([
+            [0.1, 0.2, 0.3],
+            [0.4, 0.5, 0.6],
+            [0.7, 0.8, 0.9]
+        ]);
+
+        const config = testEnv.updateUserConfig({
+            itemType: "storageObject",
+            formatTypes: ["txt"]
+        });
+        config.argv.semanticIndexerConfig.bulkEmbeddingsSize = 2;
+        config.argv.semanticIndexerConfig.bulkIndexSize = 0 as any;
+
+        await indexEmbeddingText({
+            options: config,
+            embeddingText: embeddingTextResult,
+            chunker: testEnv.chunker,
+            embeddingApiClient: testEnv.embeddingApiClient,
+            opensearchApiClient: testEnv.opensearchApiClient,
+            metadata: {
+                recordId: "id5",
+                fileFormat: "txt"
+            }
+        });
+
+        testEnv.expectSuccessCalls({
+            chunkCallCount: 1,
+            embeddingApiCallCount: 2,
+            bulkIndexCallCount: 2,
+            deleteByQueryCallCount: 1
+        });
+    });
+
+    it("should issue only one delete-by-query for many subObjects", async () => {
+        const chunker = {
+            chunk: sinon.stub().callsFake(async (text: string) => [
+                { text, length: text.length, position: 0, overlap: 0 }
+            ])
+        };
+        const embeddingApiClient = {
+            get: sinon
+                .stub()
+                .callsFake(async (texts: string[]) =>
+                    texts.map((_, i) => [i + 0.1, i + 0.2, i + 0.3])
+                )
+        };
+        const opensearchApiClient = {
+            bulkIndexDocument: sinon.stub().resolves(),
+            deleteByQuery: sinon.stub().resolves({
+                body: {
+                    version_conflicts: 0,
+                    timed_out: false
+                }
+            })
+        };
+
+        const subObjects = Array.from({ length: 10 }, (_, i) => ({
+            subObjectId: `sub-${i}`,
+            subObjectType: "table",
+            text: `table-${i}`
+        }));
+
+        await indexEmbeddingText({
+            options: {
+                id: "perf-test-indexer",
+                itemType: "storageObject",
+                timeout: "3m",
+                argv: {
+                    semanticIndexerConfig: {
+                        bulkEmbeddingsSize: 20,
+                        bulkIndexSize: 20,
+                        fullIndexName: "semantic-index-v1"
+                    }
+                }
+            } as any,
+            embeddingText: {
+                text: "main-text",
+                subObjects
+            } as any,
+            chunker: chunker as any,
+            embeddingApiClient: embeddingApiClient as any,
+            opensearchApiClient: opensearchApiClient as any,
+            metadata: {
+                recordId: "perf-record-id",
+                fileFormat: "csv"
+            }
+        });
+
+        expect(chunker.chunk.callCount).to.equal(11);
+        expect(opensearchApiClient.deleteByQuery.callCount).to.equal(1);
     });
 });
