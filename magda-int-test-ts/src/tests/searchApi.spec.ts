@@ -105,6 +105,9 @@ describe("search api hybrid integration tests [in_memory]", function (this) {
     let testUserId: string = "";
     // user will be set to branch B
     let branchBId: string = "";
+    // user will be set to branch A
+    let branchAId: string = "";
+    let restrictedUserId: string = "";
     // dataset will be set to section C
     let sectionCId: string = "";
     const datasets: any[] = [
@@ -169,6 +172,7 @@ describe("search api hybrid integration tests [in_memory]", function (this) {
         }
 
         branchBId = await getOrgUnitIdByName("Branch B");
+        branchAId = await getOrgUnitIdByName("Branch A");
         sectionCId = await getOrgUnitIdByName("Section C");
 
         const testUser = await authApiClient.createUser({
@@ -179,6 +183,15 @@ describe("search api hybrid integration tests [in_memory]", function (this) {
             orgUnitId: branchBId
         });
         testUserId = testUser.id;
+
+        const restrictedUser = await authApiClient.createUser({
+            displayName: "Restricted Test User",
+            email: `restricted-${uuidV4()}@test.com`,
+            source: "internal",
+            sourceId: uuidV4(),
+            orgUnitId: branchAId
+        });
+        restrictedUserId = restrictedUser.id;
     });
 
     after(async function (this) {
@@ -332,6 +345,60 @@ describe("search api hybrid integration tests [in_memory]", function (this) {
         // should only find 1 relevant datasets
         expect(r.value?.dataSets?.length).to.equal(1);
     });
+
+    it("should exclude unauthorized datasets from semantic-hybrid results", async () => {
+        const branchADatasetId = await createTestDatasetByUser(
+            DEFAULT_ADMIN_USER_ID,
+            {
+                aspects: {
+                    "dcat-dataset-strings": {
+                        title: "public chocolate milk guide",
+                        description:
+                            "Chocolate milk preparation guide with dairy ratios and serving options."
+                    },
+                    publishing: {
+                        state: "published"
+                    },
+                    "access-control": {
+                        orgUnitId: branchAId
+                    }
+                }
+            }
+        );
+        const sectionCDatasetId = await createTestDatasetByUser(
+            DEFAULT_ADMIN_USER_ID,
+            {
+                aspects: {
+                    "dcat-dataset-strings": {
+                        title: "confidential chocolate milk guide",
+                        description:
+                            "Internal chocolate milk preparation guide with restricted notes."
+                    },
+                    publishing: {
+                        state: "published"
+                    },
+                    "access-control": {
+                        orgUnitId: sectionCId
+                    }
+                }
+            }
+        );
+
+        let indexResult = await Try(indexerApiClient.indexDataset(sectionCDatasetId));
+        expect(indexResult.error).to.not.be.an.instanceof(Error);
+        expect(indexResult.value?.successes).to.equal(1);
+
+        indexResult = await Try(indexerApiClient.indexDataset(branchADatasetId));
+        expect(indexResult.error).to.not.be.an.instanceof(Error);
+        expect(indexResult.value?.successes).to.equal(1);
+
+        const r = await Try(searchDataset("chocolate milk guide", restrictedUserId));
+        expect(r.error).to.not.be.an.instanceof(Error);
+        const resultIds = (r.value?.dataSets || []).map((d: any) => d.identifier);
+
+        expect(resultIds).to.include(branchADatasetId);
+        expect(resultIds).to.not.include(sectionCDatasetId);
+    });
 });
 
 describe("search api hybrid integration tests [on_disk]", function (this) {
@@ -371,6 +438,9 @@ describe("search api hybrid integration tests [on_disk]", function (this) {
     let testUserId: string = "";
     // user will be set to branch B
     let branchBId: string = "";
+    // user will be set to branch A
+    let branchAId: string = "";
+    let restrictedUserId: string = "";
     // dataset will be set to section C
     let sectionCId: string = "";
     const datasets: any[] = [
@@ -435,6 +505,7 @@ describe("search api hybrid integration tests [on_disk]", function (this) {
         }
 
         branchBId = await getOrgUnitIdByName("Branch B");
+        branchAId = await getOrgUnitIdByName("Branch A");
         sectionCId = await getOrgUnitIdByName("Section C");
 
         const testUser = await authApiClient.createUser({
@@ -445,6 +516,15 @@ describe("search api hybrid integration tests [on_disk]", function (this) {
             orgUnitId: branchBId
         });
         testUserId = testUser.id;
+
+        const restrictedUser = await authApiClient.createUser({
+            displayName: "Restricted Test User",
+            email: `restricted-${uuidV4()}@test.com`,
+            source: "internal",
+            sourceId: uuidV4(),
+            orgUnitId: branchAId
+        });
+        restrictedUserId = restrictedUser.id;
     });
 
     after(async function (this) {
@@ -597,5 +677,59 @@ describe("search api hybrid integration tests [on_disk]", function (this) {
         expect(r.value?.dataSets?.[0]?.identifier).to.equal(datasetId3);
         // should only find 1 relevant datasets; find all datasets in on_disk mode
         expect(r.value?.dataSets?.length).to.equal(datasets.length);
+    });
+
+    it("should exclude unauthorized datasets from semantic-hybrid results", async () => {
+        const branchADatasetId = await createTestDatasetByUser(
+            DEFAULT_ADMIN_USER_ID,
+            {
+                aspects: {
+                    "dcat-dataset-strings": {
+                        title: "public chocolate milk guide",
+                        description:
+                            "Chocolate milk preparation guide with dairy ratios and serving options."
+                    },
+                    publishing: {
+                        state: "published"
+                    },
+                    "access-control": {
+                        orgUnitId: branchAId
+                    }
+                }
+            }
+        );
+        const sectionCDatasetId = await createTestDatasetByUser(
+            DEFAULT_ADMIN_USER_ID,
+            {
+                aspects: {
+                    "dcat-dataset-strings": {
+                        title: "confidential chocolate milk guide",
+                        description:
+                            "Internal chocolate milk preparation guide with restricted notes."
+                    },
+                    publishing: {
+                        state: "published"
+                    },
+                    "access-control": {
+                        orgUnitId: sectionCId
+                    }
+                }
+            }
+        );
+
+        let indexResult = await Try(indexerApiClient.indexDataset(sectionCDatasetId));
+        expect(indexResult.error).to.not.be.an.instanceof(Error);
+        expect(indexResult.value?.successes).to.equal(1);
+
+        indexResult = await Try(indexerApiClient.indexDataset(branchADatasetId));
+        expect(indexResult.error).to.not.be.an.instanceof(Error);
+        expect(indexResult.value?.successes).to.equal(1);
+
+        const r = await Try(searchDataset("chocolate milk guide", restrictedUserId));
+        expect(r.error).to.not.be.an.instanceof(Error);
+        const resultIds = (r.value?.dataSets || []).map((d: any) => d.identifier);
+
+        expect(resultIds).to.include(branchADatasetId);
+        expect(resultIds).to.not.include(sectionCDatasetId);
     });
 });
