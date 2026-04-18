@@ -94,8 +94,27 @@ curl -I "http://127.0.0.1:6120/"
 - Full default chart can exceed practical startup limits on this local Docker/minikube setup and leave many pods in `ContainerCreating` / `Pending`.
 - Confirmed scheduler constraint seen during setup: `Insufficient memory` for some optional components.
 - Lean profile above is the stable path for day-to-day local development on this hardware.
+- If pods are stuck for long periods after a laptop sleep/wake cycle, restart minikube and redeploy.
 
 If OpenSearch is not ready yet, `indexer` may restart with `Connection refused` to `opensearch:9200` until OpenSearch finishes startup.
+
+Recovery commands:
+
+```bash
+minikube stop
+minikube start --driver=docker --cpus=3 --memory=6144
+helm upgrade --namespace magda --install --timeout 9999s \
+  --set global.openfaas.enabled=false \
+  --set global.searchEngine.hybridSearch.enabled=false \
+  --set tags.all=false \
+  --set tags.gateway=true \
+  --set tags.indexer=true \
+  --set tags.opensearch=true \
+  --set tags.search-api=true \
+  --set tags.storage-api=true \
+  --set tags.web-server=true \
+  magda oci://ghcr.io/magda-io/charts/magda
+```
 
 ```bash
 kubectl get pods -n magda
