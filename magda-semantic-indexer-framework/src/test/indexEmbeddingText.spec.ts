@@ -400,4 +400,33 @@ describe("indexEmbeddingText", () => {
             deleteByQueryCallCount: 1
         });
     });
+
+    it("should skip when neither text nor subObjects are provided", async () => {
+        const config = testEnv.updateUserConfig({
+            itemType: "storageObject",
+            formatTypes: ["txt"]
+        });
+
+        let caughtError: any = null;
+        try {
+            await indexEmbeddingText({
+                options: config,
+                embeddingText: {} as any,
+                chunker: testEnv.chunker,
+                embeddingApiClient: testEnv.embeddingApiClient,
+                opensearchApiClient: testEnv.opensearchApiClient,
+                metadata: {
+                    recordId: "skip-empty-input",
+                    fileFormat: "txt"
+                }
+            });
+        } catch (e) {
+            caughtError = e;
+        }
+
+        expect(caughtError).to.exist;
+        expect((caughtError as Error).message).to.include(
+            "No text or subObjects found to index."
+        );
+    });
 });
