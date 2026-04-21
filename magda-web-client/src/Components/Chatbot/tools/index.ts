@@ -10,6 +10,9 @@ async function createTools(input: ChainInput): Promise<WebLLMTool[]> {
 
     const tools: (WebLLMTool | null)[] = [searchDatasets, defaultAgent];
 
+    const queryTool = await createQueryDatasetTool(input);
+    if (queryTool) tools.push(queryTool);
+
     if (
         type === "DATASET_PAGE" ||
         type === "DISTRIBUTION_PAGE" ||
