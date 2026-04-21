@@ -31,7 +31,14 @@ export async function createQueryDatasetTool(
         ? dataset.distributions
         : [];
     if (!distributions?.length) {
-        return null;
+        return {
+            name: "queryDataset",
+            func: async function (this: ChainInput) {
+                return "No dataset is currently selected. Please choose a dataset first.";
+            },
+            description:
+                "Use this tool to explore dataset files and columns. Requires a dataset to be selected."
+        };
     }
     const dists = distributions
         .map((dist, idx) => ({
@@ -45,7 +52,14 @@ export async function createQueryDatasetTool(
                 ) !== -1
         );
     if (!dists.length) {
-        return null;
+        return {
+            name: "queryDataset",
+            func: async function (this: ChainInput) {
+                return "This dataset has no supported CSV distributions to query.";
+            },
+            description:
+                "Use this tool to explore dataset files and columns when available."
+        };
     }
     const distTitleList = dists
         .map((item) => `- ${item.dist.title}`)
