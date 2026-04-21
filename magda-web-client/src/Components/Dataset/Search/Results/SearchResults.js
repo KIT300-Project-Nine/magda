@@ -3,6 +3,7 @@ import DatasetSummary from "./DatasetSummary";
 import "./SearchResults.scss";
 import SearchPageSuggest from "./SearchPageSuggest";
 import { needsContent } from "helpers/content";
+import RestrictedAccessMessage from "Components/Common/RestrictedAccessMessage";
 
 function SuggestionBox() {
     return (
@@ -48,38 +49,87 @@ class SearchResults extends Component {
             this.props.configuration.searchResultsPerPage
         );
 
+        //         return (
+        //             <div className="search-results">
+        //                 <ul className="list--unstyled">
+        //                     {/* Only show the suggestion box before the first result if we're on the first page - if we're not
+        //                     on the first page then presumably it was already shown as the last result on the previous page */}
+        //                     {suggestionBoxIndex === 0 && this.props.isFirstPage && (
+        //                         <SuggestionBox />
+        //                     )}
+
+        //                     {shownSearchResults.map((result, i) => (
+
+        //                         //show the request dataset form only after the first result
+        //                         <React.Fragment key={i}>
+        //                             <li
+        //                                 key={`result-${i}`}
+        //                                 className="search-results__result"
+        //                             >
+        //                                 {result.restricted ? (
+        //                                    <RestrictedAccessMessage />
+        //             ) : (
+        //                                 <DatasetSummary
+        //                                     dataset={result}
+        //                                     searchText={this.props.searchText}
+        //                                     searchResultNumber={i}
+        //                                 />
+        //             )}
+        //                             </li>
+
+        //                             {i + 1 === suggestionBoxIndex && <SuggestionBox />}
+        //                         </React.Fragment>
+        //                     ))}
+        //                 </ul>
+        //             </div>
+        //         );
+        //     }
+        // }
+
+        //******** */ Temporary test: marking first result as restricted to show restricted access message.
+        // Will be replaced by backend-driven `restricted` flag.*******/////
+
         return (
             <div className="search-results">
                 <ul className="list--unstyled">
                     {/* Only show the suggestion box before the first result if we're on the first page - if we're not
-                    on the first page then presumably it was already shown as the last result on the previous page */}
+            on the first page then presumably it was already shown as the last result on the previous page */}
                     {suggestionBoxIndex === 0 && this.props.isFirstPage && (
                         <SuggestionBox />
                     )}
 
-                    {shownSearchResults.map((result, i) => (
-                        //show the request dataset form only after the first result
-                        <React.Fragment key={i}>
-                            <li
-                                key={`result-${i}`}
-                                className="search-results__result"
-                            >
-                                <DatasetSummary
-                                    dataset={result}
-                                    searchText={this.props.searchText}
-                                    searchResultNumber={i}
-                                />
-                            </li>
+                    {shownSearchResults.map((result, i) => {
+                        const restrictedResult =
+                            i === 0 ? { ...result, restricted: true } : result;
 
-                            {i + 1 === suggestionBoxIndex && <SuggestionBox />}
-                        </React.Fragment>
-                    ))}
+                        return (
+                            <React.Fragment key={i}>
+                                <li
+                                    key={`result-${i}`}
+                                    className="search-results__result"
+                                >
+                                    {restrictedResult.restricted ? (
+                                        <RestrictedAccessMessage />
+                                    ) : (
+                                        <DatasetSummary
+                                            dataset={restrictedResult}
+                                            searchText={this.props.searchText}
+                                            searchResultNumber={i}
+                                        />
+                                    )}
+                                </li>
+
+                                {i + 1 === suggestionBoxIndex && (
+                                    <SuggestionBox />
+                                )}
+                            </React.Fragment>
+                        );
+                    })}
                 </ul>
             </div>
         );
     }
 }
-
 SearchResults.defaultProps = { searchResults: [] };
 
 export default needsContent("configuration")(SearchResults);
