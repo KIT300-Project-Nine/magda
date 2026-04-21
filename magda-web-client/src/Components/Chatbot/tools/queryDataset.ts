@@ -1,11 +1,11 @@
 import {
-    createChatEventMessageCompleteMsg,
-    createChatEventMessageErrorMsg
+    createChatEventMessageCompleteMsg
+    //createChatEventMessageErrorMsg
 } from "../Messaging";
 import { ChainInput } from "../commons";
 import { runQuery } from "../../../libs/sqlUtils";
 import { WebLLMTool } from "../ChatWebLLM";
-import { createQueryDataFilesWithSQLQueryTool } from "./queryDataFilesWithSQLQuery";
+//import { createQueryDataFilesWithSQLQueryTool } from "./queryDataFilesWithSQLQuery";
 import toYaml from "libs/toYaml";
 
 const SUPPORT_FORMATS = ["CSV-GEO-AU", "CSV"];
@@ -51,6 +51,10 @@ export async function createQueryDatasetTool(
         .map((item) => `- ${item.dist.title}`)
         .join("\n");
     async function queryDataset(this: ChainInput) {
+        if (!this.dataset) {
+            return "No dataset is currently selected. Please choose a dataset first before querying it.";
+        }
+
         this.queue.push(
             createChatEventMessageCompleteMsg(
                 "Some data files included in this dataset might help to answer your inquiries. " +
