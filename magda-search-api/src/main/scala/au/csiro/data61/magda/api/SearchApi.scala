@@ -120,7 +120,8 @@ class SearchApi(
                 ) =>
                   withDatasetAndDistributionReadAuthDecision(
                     authApiClient,
-                    publishingState
+                    publishingState,
+                    enforceAuth = true
                   ) { authDecisions =>
                     val query = Query
                       .fromQueryParams(
@@ -277,7 +278,8 @@ class SearchApi(
                 ) =>
                   withDatasetAndDistributionReadAuthDecision(
                     authApiClient,
-                    publishingState
+                    publishingState,
+                    enforceAuth = true
                   ) { authDecisions =>
                     val query = Query
                       .fromQueryParams(
@@ -413,7 +415,7 @@ class SearchApi(
                 'input ?,
                 "limit" ? 10
               )) { (field, input, limit) =>
-                withDatasetReadAuthDecision(authApiClient, None) {
+                withDatasetReadAuthDecision(authApiClient, None, enforceAuth = true) {
                   authDecision =>
                     onSuccess(
                       searchQueryer.autoCompleteQuery(

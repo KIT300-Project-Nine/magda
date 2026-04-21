@@ -1,13 +1,16 @@
 package au.csiro.data61.magda.directives
 
-import akka.http.scaladsl.model.StatusCodes.{Forbidden, InternalServerError}
+import akka.http.scaladsl.model.StatusCodes.{Forbidden, InternalServerError, Unauthorized}
 import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.server.{Directive0, _}
+import akka.http.scalads1.server.AuthorizationFailedRejection
+import akka.http.scaladsl.server.{Directive0, Directive1, ValidationRejection}
+
 import au.csiro.data61.magda.Authentication
 import au.csiro.data61.magda.client.{AuthApiClient, AuthDecisionReqConfig}
-import io.jsonwebtoken.{Claims, Jws}
 import au.csiro.data61.magda.model.Auth
 import au.csiro.data61.magda.model.Auth.AuthDecision
+
+import io.jsonwebtoken.{Claims, Jws}
 import spray.json.JsObject
 
 import scala.concurrent.Future
@@ -21,15 +24,47 @@ object AuthDirectives {
     * Or unconditional decision for a single record / object will be returned.
     * @param authApiClient
     * @param config
-    * @return
+    * @param enforceAuth // If true, will return 401 Unauthorized if the decision is false or cannot be made.
+    *                    // If false, (default), just provides the decision (useful for filtering in search)
+    * @return // Directive1[AuthDecision]
     */
   def withAuthDecision(
       authApiClient: AuthApiClient,
-      config: AuthDecisionReqConfig
+      config: AuthDecisionReqConfig,
+      enforceAuth: Boolean = false // New param, default keeps existing behaviour
   ): Directive1[AuthDecision] = (extractLog & getJwt).tflatMap {
     case (log, jwt) =>
-      onComplete(authApiClient.getAuthDecision(jwt, config)).flatMap {
-        case Success(authDecision: AuthDecision) => provide(authDecision)
+      // Call the external Auth API (OPA) to get the decision
+      onComplete(authApiClient.getAuthDecision(jwt, config)).flatMap { // Extract logger and JWT token from the request
+
+        case Success(authDecision: AuthDecision) =>
+          if (enforceAuth) {
+            // Enforce 401 return when permission is denied
+
+            if (authDecision.hasResidualRules) {
+              // Partial evaluation case. Cannot decide yes/no for every record
+              log.warning(
+                "Partial evaluation only for operation `{}`. Treating as unauthorized.",
+                config.operationUri
+              )
+              // Return directive that rejects with 401
+              reject(AuthorizationFailedRejection) 
+            }
+            else if (authDecision.result.isDefined && Auth.isTrueEquivalent(authDecision.result.get)) {
+              // Permission granted, continue
+              provide(authDecision)
+            }
+            else {
+              // Permission denied, main 401 path for restricted records
+              complete(Unauthorized,
+              s"You are not authorized to perform `${config.operationUri}` on the requested resource"
+             )
+            }
+          } else {
+            // Normal mode (used by search filtering, text-to-SQL, etc.)
+            // Pass the decision object downstream so filtering can be applied
+            provide(authDecision)
+          }
         case Failure(e) =>
           log.error("Failed to get auth decision: {}", e)
           complete(
@@ -194,4 +229,7 @@ object AuthDirectives {
         s"Anonymous users access are not permitted: userId is required."
       )
   }
+
+  // New: Can use this 401 unauthorized response elsewhere.
+  def rejectWithUnauthorized(message: String = "Unauthorized"): Directive0 = complete(Unauthorized, message)
 }
