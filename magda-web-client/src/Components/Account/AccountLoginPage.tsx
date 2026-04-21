@@ -6,6 +6,7 @@ import { config, isBackendSameOrigin } from "config";
 import { useAsync } from "react-async-hook";
 import markdownToHtml from "@magda/typescript-common/dist/markdownToHtml.js";
 import QrCodeLoginArea from "./QrCodeLoginArea";
+import RestrictedAccessMessage from "Components/Common/RestrictedAccessMessage";
 
 const { baseUrl, baseExternalUrl, authPluginRedirectUrl } = config;
 
@@ -368,6 +369,7 @@ const AccountLoginPage: FunctionComponent<PropsType> = (props) => {
             {!isAuthPluginsLoading ? (
                 <div className="col-sm-6 col-md-5">
                     <h2>Sign In / Register Providers</h2>
+
                     <LoginOptionList
                         authConfigItems={authConfigItems}
                         redirectTo={props.redirectTo}
