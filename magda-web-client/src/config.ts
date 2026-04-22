@@ -867,7 +867,7 @@ export const isBackendSameOrigin =
         : false;
 
 const previewMapBaseUrl =
-    serverConfig.previewMapBaseUrl || fallbackApiHost + "preview-map/";
+    serverConfig.previewMapBaseUrl || baseUrl + "preview-map/";
 const proxyUrl = getProxyUrl();
 
 /**
@@ -895,7 +895,7 @@ export const commonFetchRequestOptions: RequestInit = {
 AuthDecisionQueryClient.fetchOptions = { ...commonFetchRequestOptions };
 
 const contentApiBaseUrl =
-    serverConfig.contentApiBaseUrl || fallbackApiHost + "api/v0/content/";
+    serverConfig.contentApiBaseUrl || baseUrl + "api/v0/content/";
 
 const vocabularyApiEndpoints =
     Array.isArray(serverConfig.vocabularyApiEndpoints) &&
@@ -965,21 +965,19 @@ export const config: ConfigDataType = {
         : "/sign-in-redirect",
     contentApiBaseUrl,
     searchApiBaseUrl:
-        serverConfig.searchApiBaseUrl || fallbackApiHost + "api/v0/search/",
+        serverConfig.searchApiBaseUrl || baseUrl + "api/v0/search/",
     indexerApiBaseUrl:
-        serverConfig?.indexerApiBaseUrl || fallbackApiHost + "api/v0/indexer/",
+        serverConfig?.indexerApiBaseUrl || baseUrl + "api/v0/indexer/",
     registryApiReadOnlyBaseUrl:
         serverConfig.registryApiReadOnlyBaseUrl ||
-        fallbackApiHost + "api/v0/registry-read-only/",
+        baseUrl + "api/v0/registry-read-only/",
     registryApiBaseUrl:
-        serverConfig.registryApiBaseUrl || fallbackApiHost + "api/v0/registry/",
-    adminApiBaseUrl:
-        serverConfig.adminApiBaseUrl || fallbackApiHost + "api/v0/admin/",
-    authApiBaseUrl:
-        serverConfig.authApiBaseUrl || fallbackApiHost + "api/v0/auth/",
+        serverConfig.registryApiBaseUrl || baseUrl + "api/v0/registry/",
+    adminApiBaseUrl: serverConfig.adminApiBaseUrl || baseUrl + "api/v0/admin/",
+    authApiBaseUrl: serverConfig.authApiBaseUrl || baseUrl + "api/v0/auth/",
     correspondenceApiBaseUrl:
         serverConfig.correspondenceApiBaseUrl ||
-        fallbackApiHost + "api/v0/correspondence/",
+        baseUrl + "api/v0/correspondence/",
     // before modify the logic of generating storageApiUrl, be sure you've tested the following scenarios:
     // - gateway / backend apis amounted at non-root path (via [global.externalUrl](https://github.com/magda-io/magda/blob/master/deploy/helm/magda-core/README.md))
     // - ui is mounted at non-root path (via web-server.uiBaseUrl)
@@ -989,7 +987,7 @@ export const config: ConfigDataType = {
         ? (getFullUrlIfNotEmpty(
               removePathPrefix(serverConfig.storageApiBaseUrl, baseUrl)
           ) as string)
-        : fallbackApiHost + "api/v0/storage/",
+        : baseUrl + "api/v0/storage/",
     previewMapBaseUrl,
     proxyUrl,
     rssUrl: proxyUrl + "_0d/https://blog.data.gov.au/blogs/rss.xml",

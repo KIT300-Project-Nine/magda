@@ -88,7 +88,7 @@ const SQLConsoleLoader: FunctionComponent<PropsType> = (props) => {
             if (
                 event.shiftKey === true &&
                 (event.metaKey === true || event.ctrlKey === true) &&
-                event.key === "s"
+                (event.key === "s" || event.key === "S")
             ) {
                 event.preventDefault();
                 event.stopPropagation();
