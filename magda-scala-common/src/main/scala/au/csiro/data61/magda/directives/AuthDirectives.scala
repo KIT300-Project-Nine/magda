@@ -1,6 +1,8 @@
 package au.csiro.data61.magda.directives
 
 import akka.http.scaladsl.model.StatusCodes.{Forbidden, InternalServerError, Unauthorized}
+import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.AuthorizationFailedRejection
 import akka.http.scaladsl.server.{Directive0, Directive1, ValidationRejection}
@@ -43,7 +45,10 @@ object AuthDirectives {
            if (authDecision.hasResidualRules) {
               // Partial evaluation case. Cannot decide yes/no for every record
               log.warning("Partial evaluation only for operation `{}`. Treating as unauthorized.", config.operationUri)
-              rejectWithUnauthorized(s"You are not authorized to perform `${config.operationUri}` on the requested resource. Please login if you have access.")
+              complete(
+              Unauthorized,
+              s"You are not authorized to perform `${config.operationUri}` on the requested resource. Please login if you have access."
+            )
             } else if (authDecision.result.isDefined && Auth.isTrueEquivalent(authDecision.result.get)) {
               // Permission granted, continue
               provide(authDecision)
@@ -54,7 +59,8 @@ object AuthDirectives {
 
                 if (!isLoggedIn) {
                   // Not logged in + private resource friendly 401
-                  rejectWithUnauthorized(
+                  complete(
+                    Unauthorized,
                     "This resource is private or restricted. Please log in to access it."
                   )
                 } else {
@@ -88,7 +94,7 @@ object AuthDirectives {
           )
       }
   }
-}
+
 
   /**
     * Make one or more auth decisions based on supplied auth decision request config list.
@@ -277,3 +283,4 @@ object AuthDirectives {
         ),
         enforceAuth = true          // 6. This is the KEY: enable enforcement mode (triggers 401/403)
       ).flatMap(_ => pass)          // 7. If this is reached, permission granted, continue to route handler
+}

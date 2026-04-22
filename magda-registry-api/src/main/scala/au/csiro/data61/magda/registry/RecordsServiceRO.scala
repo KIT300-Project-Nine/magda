@@ -929,10 +929,10 @@ class RecordsServiceRO(
   def getById: Route = get {
     path(Segment) { id =>
       requiresTenantId { tenantId =>
-        requirePermissionForPrivateResource(
-          authApiClient,
-          "object/record/read"
-        ) { 
+        withAuthDecision(
+  authApiClient,
+  AuthDecisionReqConfig("object/record/read")
+) { authDecision => 
           parameters('aspect.*, 'optionalAspect.*, 'dereference.as[Boolean].?) {
             (aspects, optionalAspects, dereference) =>
               onCompleteBlockingTask {
@@ -940,6 +940,7 @@ class RecordsServiceRO(
                   session.queryTimeout(this.defaultQueryTimeout)
                   recordPersistence.getByIdWithAspects(
                     tenantId,
+                    authDecision,
                     id,
                     aspects,
                     optionalAspects,
@@ -1027,15 +1028,15 @@ class RecordsServiceRO(
   def getByIdSummary: Route = get {
     path("summary" / Segment) { id =>
       requiresTenantId { tenantId =>
-        requirePermissionForPrivateResource(
+        withAuthDecision(
           authApiClient,
-          "object/record/read"
-        ) {
+          AuthDecisionReqConfig("object/record/read")
+        ) { authDecision =>
           onCompleteBlockingTask {
             DB readOnly { implicit session =>
               session.queryTimeout(this.defaultQueryTimeout)
               recordPersistence
-                .getById(tenantId, id) match {
+                .getById(tenantId, authDecision, id) match {
                 case Some(record) => complete(record)
                 case None =>
                   complete(
@@ -1114,15 +1115,15 @@ class RecordsServiceRO(
   def getByIdInFull: Route = get {
     path("inFull" / Segment) { id =>
       requiresTenantId { tenantId =>
-        requirePermissionForPrivateResource(
+        withAuthDecision(
           authApiClient,
-          "object/record/read"
-        ) {
+          AuthDecisionReqConfig("object/record/read")
+        ) { authDecision =>
           onCompleteBlockingTask {
             DB readOnly { implicit session =>
               session.queryTimeout(this.defaultQueryTimeout)
               recordPersistence
-                .getCompleteRecordById(tenantId, id) match {
+                .getCompleteRecordById(tenantId, authDecision, id) match {
                 case Some(record) => complete(record)
                 case None =>
                   complete(

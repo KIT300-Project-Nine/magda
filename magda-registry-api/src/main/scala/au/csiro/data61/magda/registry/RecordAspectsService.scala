@@ -6,6 +6,9 @@ import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import akka.stream.Materializer
+
+import au.csiro.data61.magda.directives.AuthDirectives._
+
 import au.csiro.data61.magda.directives.AuthDirectives.requireUserId
 import au.csiro.data61.magda.directives.TenantDirectives.requiresSpecifiedTenantId
 import au.csiro.data61.magda.model.Registry._

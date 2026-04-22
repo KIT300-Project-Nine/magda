@@ -18,7 +18,8 @@ import au.csiro.data61.magda.directives.AuthDirectives.{
   requirePermission,
   requireUnconditionalAuthDecision,
   requireUserId,
-  requirePermissionForPrivateResource // Added import
+  requirePermissionForPrivateResource, // Added import
+  withAuthDecision
 }
 import au.csiro.data61.magda.directives.TenantDirectives.requiresSpecifiedTenantId
 import au.csiro.data61.magda.model.Auth.recordToContextData
