@@ -22,6 +22,7 @@ import au.csiro.data61.magda.directives.RouteDirectives.completeBlockingTask
 import au.csiro.data61.magda.directives.CommonDirectives.onCompleteBlockingTask
 
 import scala.concurrent.ExecutionContext
+import au.csiro.data61.magda.directives.AuthDirectives.requirePermissionForPrivateResource
 
 @Path("/records")
 @io.swagger.annotations.Api(value = "records", produces = "application/json")
@@ -928,10 +929,10 @@ class RecordsServiceRO(
   def getById: Route = get {
     path(Segment) { id =>
       requiresTenantId { tenantId =>
-        withAuthDecision(
+        requirePermissionForPrivateResource(
           authApiClient,
-          AuthDecisionReqConfig("object/record/read")
-        ) { authDecision =>
+          "object/record/read"
+        ) { 
           parameters('aspect.*, 'optionalAspect.*, 'dereference.as[Boolean].?) {
             (aspects, optionalAspects, dereference) =>
               onCompleteBlockingTask {
@@ -939,7 +940,6 @@ class RecordsServiceRO(
                   session.queryTimeout(this.defaultQueryTimeout)
                   recordPersistence.getByIdWithAspects(
                     tenantId,
-                    authDecision,
                     id,
                     aspects,
                     optionalAspects,
@@ -1027,15 +1027,15 @@ class RecordsServiceRO(
   def getByIdSummary: Route = get {
     path("summary" / Segment) { id =>
       requiresTenantId { tenantId =>
-        withAuthDecision(
+        requirePermissionForPrivateResource(
           authApiClient,
-          AuthDecisionReqConfig("object/record/read")
-        ) { authDecision =>
+          "object/record/read"
+        ) {
           onCompleteBlockingTask {
             DB readOnly { implicit session =>
               session.queryTimeout(this.defaultQueryTimeout)
               recordPersistence
-                .getById(tenantId, authDecision, id) match {
+                .getById(tenantId, id) match {
                 case Some(record) => complete(record)
                 case None =>
                   complete(
@@ -1114,15 +1114,15 @@ class RecordsServiceRO(
   def getByIdInFull: Route = get {
     path("inFull" / Segment) { id =>
       requiresTenantId { tenantId =>
-        withAuthDecision(
+        requirePermissionForPrivateResource(
           authApiClient,
-          AuthDecisionReqConfig("object/record/read")
-        ) { authDecision =>
+          "object/record/read"
+        ) {
           onCompleteBlockingTask {
             DB readOnly { implicit session =>
               session.queryTimeout(this.defaultQueryTimeout)
               recordPersistence
-                .getCompleteRecordById(tenantId, authDecision, id) match {
+                .getCompleteRecordById(tenantId, id) match {
                 case Some(record) => complete(record)
                 case None =>
                   complete(
@@ -1160,5 +1160,4 @@ class RecordsServiceRO(
         recordPersistence,
         eventPersistence
       ).route
-
 }

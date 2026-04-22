@@ -121,7 +121,7 @@ class SearchApi(
                   withDatasetAndDistributionReadAuthDecision(
                     authApiClient,
                     publishingState,
-                    enforceAuth = true
+                    enforceAuth = false // Use non-enforcing mode so search works for anonymous users
                   ) { authDecisions =>
                     val query = Query
                       .fromQueryParams(
@@ -279,7 +279,7 @@ class SearchApi(
                   withDatasetAndDistributionReadAuthDecision(
                     authApiClient,
                     publishingState,
-                    enforceAuth = true
+                    enforceAuth = false // Use non-enforcing mode so search works for anonymous users
                   ) { authDecisions =>
                     val query = Query
                       .fromQueryParams(
@@ -415,7 +415,7 @@ class SearchApi(
                 'input ?,
                 "limit" ? 10
               )) { (field, input, limit) =>
-                withDatasetReadAuthDecision(authApiClient, None, enforceAuth = true) {
+                withDatasetReadAuthDecision(authApiClient, None, enforceAuth = false) { // Also changed to false, forces the non-enforcing path
                   authDecision =>
                     onSuccess(
                       searchQueryer.autoCompleteQuery(

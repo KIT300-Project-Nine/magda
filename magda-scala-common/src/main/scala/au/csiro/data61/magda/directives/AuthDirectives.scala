@@ -2,7 +2,7 @@ package au.csiro.data61.magda.directives
 
 import akka.http.scaladsl.model.StatusCodes.{Forbidden, InternalServerError, Unauthorized}
 import akka.http.scaladsl.server.Directives._
-import akka.http.scalads1.server.AuthorizationFailedRejection
+import akka.http.scaladsl.server.AuthorizationFailedRejection
 import akka.http.scaladsl.server.{Directive0, Directive1, ValidationRejection}
 
 import au.csiro.data61.magda.Authentication
@@ -11,7 +11,7 @@ import au.csiro.data61.magda.model.Auth
 import au.csiro.data61.magda.model.Auth.AuthDecision
 
 import io.jsonwebtoken.{Claims, Jws}
-import spray.json.JsObject
+import spray.json.{JsObject, JsString, JsBoolean}
 
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
@@ -40,39 +40,55 @@ object AuthDirectives {
         case Success(authDecision: AuthDecision) =>
           if (enforceAuth) {
             // Enforce 401 return when permission is denied
-
-            if (authDecision.hasResidualRules) {
+           if (authDecision.hasResidualRules) {
               // Partial evaluation case. Cannot decide yes/no for every record
-              log.warning(
-                "Partial evaluation only for operation `{}`. Treating as unauthorized.",
-                config.operationUri
-              )
-              // Return directive that rejects with 401
-              reject(AuthorizationFailedRejection) 
-            }
-            else if (authDecision.result.isDefined && Auth.isTrueEquivalent(authDecision.result.get)) {
+              log.warning("Partial evaluation only for operation `{}`. Treating as unauthorized.", config.operationUri)
+              rejectWithUnauthorized(s"You are not authorized to perform `${config.operationUri}` on the requested resource. Please login if you have access.")
+            } else if (authDecision.result.isDefined && Auth.isTrueEquivalent(authDecision.result.get)) {
               // Permission granted, continue
               provide(authDecision)
+            } else { // Fixed indentation
+              // Distinguish 401 (not logged in) vs 403 (logged in but denied)
+              getJwt.flatMap { jwtOpt =>
+                val isLoggedIn = jwtOpt.isDefined
+
+                if (!isLoggedIn) {
+                  // Not logged in + private resource friendly 401
+                  rejectWithUnauthorized(
+                    "This resource is private or restricted. Please log in to access it."
+                  )
+                } else {
+                  // User is logged in but still doesn't have permission -> return 403
+                  // Use a clear, user-friendly message instead of a generic one
+                  complete(
+                    Forbidden,
+                    JsObject(
+                      "error" -> JsString("forbidden"),
+                      "message" -> JsString("You do not have permission to access this restricted dataset.")
+                    )
+                  )
+                }
+              }
             }
-            else {
-              // Permission denied, main 401 path for restricted records
-              complete(Unauthorized,
-              s"You are not authorized to perform `${config.operationUri}` on the requested resource"
-             )
-            }
-          } else {
-            // Normal mode (used by search filtering, text-to-SQL, etc.)
-            // Pass the decision object downstream so filtering can be applied
+          } else { // Also indentation fixed.
+            // Non-enforcing mode (default)
+            // Used by search, list endpoints, facets, etc. - never returns 401/403
             provide(authDecision)
           }
+
+        // Error handling when OPA (the Auth API) call itself fails
+        // Return 500 code here so that search and other operations are not blocked
+        // If the authorization service is temporarily down.
         case Failure(e) =>
-          log.error("Failed to get auth decision: {}", e)
+          log.error("Failed to get auth decision: {}", e) // Log the exception for debugging
+          // Return 500 so other operations are not blocked
           complete(
             InternalServerError,
             s"An error occurred while retrieving auth decision for the request."
           )
       }
   }
+}
 
   /**
     * Make one or more auth decisions based on supplied auth decision request config list.
@@ -231,5 +247,33 @@ object AuthDirectives {
   }
 
   // New: Can use this 401 unauthorized response elsewhere.
-  def rejectWithUnauthorized(message: String = "Unauthorized"): Directive0 = complete(Unauthorized, message)
-}
+  def rejectWithUnauthorized(message: String = "Unauthorized"): Directive0 = complete(Unauthorized, JsObject( // Return HTTP 401 status
+    "error" -> JsString("unauthorized"), // Consistent error type for frontend
+    "message" -> JsString(message),      // Human-readable message (customizable)
+    "suggestLogin" -> JsBoolean(true)    // Flag that tells the frontend to show login prompt
+  ))
+
+  /**
+   * New: Directive for single-record / private resource access (e.g. GET /v0/registry/records/{id} or dataset detail page)
+   * 
+   * Behaviour:
+      - If a user is not logged in (anonymous), returns 401 with a friendly "please log in" message.
+      - If a user is logged in but permission denied, returns 403 forbidden
+      - If permission granted, continues to the route handler
+
+    This is the main directive suggested for use for private dataset/record routes.
+   */
+  def requirePermissionForPrivateResource(
+    authApiClient: AuthApiClient,   // 1. Client to call the external Auth API (OPA)
+    operationUri: String,           // 2. The permission operation being checked ("object/record/read")
+    input: Option[JsObject] = None  // 3. Optional input data (e.g. record ID or aspect data for fine-grained check)
+  ): Directive0 = 
+    withAuthDecision(               // 4. Reuse the core decision logic
+      authApiClient, 
+      AuthDecisionReqConfig(        // 5. Build config for a single-resource unconditional check
+        operationUri = operationUri,//  - What permission are we checking?
+        unknowns = Some(Nil),       //  - Force unconditional decision (no partial eval)
+        input = input               //  - Pass any record-specific data
+        ),
+        enforceAuth = true          // 6. This is the KEY: enable enforcement mode (triggers 401/403)
+      ).flatMap(_ => pass)          // 7. If this is reached, permission granted, continue to route handler

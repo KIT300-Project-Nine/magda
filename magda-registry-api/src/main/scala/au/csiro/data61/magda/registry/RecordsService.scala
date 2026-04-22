@@ -18,7 +18,7 @@ import au.csiro.data61.magda.directives.AuthDirectives.{
   requirePermission,
   requireUnconditionalAuthDecision,
   requireUserId,
-  withAuthDecision
+  requirePermissionForPrivateResource // Added import
 }
 import au.csiro.data61.magda.directives.TenantDirectives.requiresSpecifiedTenantId
 import au.csiro.data61.magda.model.Auth.recordToContextData
@@ -711,7 +711,9 @@ class RecordsService(
           withAuthDecision(
             authClient,
             AuthDecisionReqConfig("object/record/update")
-          ) { authDecision =>
+              // Non-enforcing mode (enforceAuth = false), used for bulk/list-style operations
+              // This allows filtering of results intstead of returning 401 code, consistent with search behaviour
+          ) { authDecision => 
             onCompleteBlockingTask {
               val result = DB localTx { implicit session =>
                 session.queryTimeout(this.defaultQueryTimeout)
@@ -838,6 +840,8 @@ class RecordsService(
               withAuthDecision(
                 authClient,
                 AuthDecisionReqConfig("object/record/update")
+                  // Non-enforcing mode (enforceAuth = false), used for bulk/list-style operations
+                  // This allows filtering of results intstead of returning 401 code, consistent with search behaviour
               ) { authDecision =>
                 onCompleteBlockingTask {
                   val result = DB localTx { implicit session =>
@@ -961,6 +965,8 @@ class RecordsService(
             withAuthDecision(
               authClient,
               AuthDecisionReqConfig("object/record/update")
+                // Non-enforcing mode (enforceAuth = false), used for bulk/list-style operations
+                // This allows filtering of results intstead of returning 401 code, consistent with search behaviour
             ) { authDecision =>
               onCompleteBlockingTask {
                 val result = DB localTx { implicit session =>

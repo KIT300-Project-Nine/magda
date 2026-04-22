@@ -15,6 +15,9 @@ object Directives {
   /**
     *  Get read auth decision for datasets
     * 
+    *  Used by search facets and other dataset list operations
+    *  Pass 'enforceAuth' through so it can be set to 'false' for search filtering
+    * 
     *  @param enforceAuth // If true, returns 401 unauthorized when the user does not have read permission.
     *                     // If false (default), just provides the decision (for filtering search results.)
     */
@@ -29,7 +32,11 @@ object Directives {
       complete(BadRequest, s"Invalid publishing status: ${datasetType}")
     } else {
       val operationUrl = s"object/dataset/${datasetType}/read"
-      withAuthDecision(authApiClient, AuthDecisionReqConfig(operationUrl)) enforceAuth // Pass through to the updated withAuthDecision
+      withAuthDecision(
+        authApiClient, 
+        AuthDecisionReqConfig(operationUrl),
+         enforceAuth = enforceAuth // Pass through to the updated withAuthDecision
+      ) 
     }
   }
 
@@ -37,13 +44,15 @@ object Directives {
    * Get read auth decisions for both datasets and distributions.
    * Used by the main /search/datasets endpoint
    * 
+   * Use non-enforcing mode (withAllAuthDecisions) because search needs partial evaluation + filtering, not a hard 401 code
+   * 
    * @param enforceAuth If true, returns 401 Unauthorized when permission is denied.
    *                    If false (default), provides decisions for filtering
    */
   def withDatasetAndDistributionReadAuthDecision(
       authApiClient: AuthApiClient,
       publishingStatus: Option[String],
-      enforceAuth: Boolean = false // For search filtering
+      enforceAuth: Boolean = false // Ignored for search - filter mode is better suggestion
   ): Directive1[Seq[AuthDecision]] = {
     val requestRecordType = publishingStatus.getOrElse("*")
     if (requestRecordType != "*" && !requestRecordType.matches("^[\\w\\d-_]+$")) {
@@ -53,7 +62,7 @@ object Directives {
         AuthDecisionReqConfig(s"object/dataset/${requestRecordType}/read"),
         AuthDecisionReqConfig(s"object/distribution/${requestRecordType}/read")
       )
-      withAllAuthDecisions(authApiClient, configList) // Note: withAllAuthDecisions does not yet support enforceAuth
+      withAllAuthDecisions(authApiClient, configList) // Always non-enforcing decisions for filtering
     }
   }
 
