@@ -65,7 +65,12 @@ export async function createQueryDatasetTool(
         .map((item) => `- ${item.dist.title}`)
         .join("\n");
     async function queryDataset(this: ChainInput) {
-        if (!this.dataset) {
+        console.log("[queryDataset] START");
+        console.log("[queryDataset] this.keyContextData:", this.keyContextData);
+        console.log("[queryDataset] this.dataset:", this.dataset);
+        const selectedDataset = this.keyContextData?.selectedDataset;
+
+        if (!selectedDataset) {
             return "No dataset is currently selected. Please choose a dataset first before querying it.";
         }
 

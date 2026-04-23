@@ -15,16 +15,19 @@ async function createTools(input: ChainInput): Promise<WebLLMTool[]> {
         selectDataset
     ];
 
-    const queryTool = await createQueryDatasetTool(input);
-    if (queryTool) tools.push(queryTool);
-
     if (
         type === "DATASET_PAGE" ||
         type === "DISTRIBUTION_PAGE" ||
         input.dataset
     ) {
-        tools.push(await createQueryDatasetTool(input));
-        tools.push(await createPresentPreviousQueryResultAsChartTool(input));
+        const queryTool = await createQueryDatasetTool(input);
+        if (queryTool) tools.push(queryTool);
+
+        const chartTool = await createPresentPreviousQueryResultAsChartTool(
+            input
+        );
+
+        if (chartTool) tools.push(chartTool);
     }
 
     return tools.filter((item) => !!item) as WebLLMTool[];
