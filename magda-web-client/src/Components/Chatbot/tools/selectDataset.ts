@@ -1,4 +1,4 @@
-import { WebLLMTool } from "../ChatWebLLM";
+import type { WebLLMTool } from "../ChatWebLLM";
 import { ChainInput } from "../commons";
 
 const selectDataset: WebLLMTool = {
@@ -14,7 +14,7 @@ const selectDataset: WebLLMTool = {
 
         const context = (this as unknown) as ChainInput;
 
-        const datasets = context.keyContextData.queryResult;
+        const datasets = context.keyContextData.searchResults;
 
         if (!datasets || !datasets.length) {
             return "No datasets available to select. Please search for datasets first.";
@@ -27,8 +27,10 @@ const selectDataset: WebLLMTool = {
         }
 
         context.keyContextData.selectedDataset = selected;
+        context.keyContextData.datasetSchema = undefined;
+        context.keyContextData.datasetSchemaReady = false;
 
-        return `Dataset "${selected.title}" selected. You can now examine its contents`;
+        return `Dataset "${selected.title}" selected. You can now examine its contents.`;
     },
 
     description:

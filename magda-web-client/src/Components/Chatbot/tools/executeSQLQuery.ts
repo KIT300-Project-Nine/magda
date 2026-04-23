@@ -1,7 +1,7 @@
 import { createChatEventMessageCompleteMsg } from "../Messaging";
 import { markdownTable } from "markdown-table";
 import { ChainInput } from "../commons";
-import { WebLLMTool } from "../ChatWebLLM";
+import type { WebLLMTool } from "../ChatWebLLM";
 import { runQuery } from "../../../libs/sqlUtils";
 
 const executeSQLQuery: WebLLMTool = {
@@ -19,6 +19,7 @@ const executeSQLQuery: WebLLMTool = {
             );
             return null;
         }
+        this.keyContextData.queryResult = records;
         const table = markdownTable([
             Object.keys(records[0]),
             ...records.map((item) =>

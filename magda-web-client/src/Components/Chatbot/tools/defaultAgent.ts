@@ -12,7 +12,7 @@ import {
     EVENT_TYPE_PARTIAL_MSG_FINISH,
     createChatEventMessage
 } from "../Messaging";
-import { WebLLMTool } from "../ChatWebLLM";
+import type { WebLLMTool } from "../ChatWebLLM";
 
 const systemPromptTpl = SystemMessagePromptTemplate.fromTemplate(
     `You are a friendly AI agent named "{appName}". \n` +

@@ -3,7 +3,7 @@ import { createChatEventMessageCompleteMsg } from "../Messaging";
 import { markdownTable } from "markdown-table";
 import { config } from "../../../config";
 import { ChainInput } from "../commons";
-import { WebLLMTool } from "../ChatWebLLM";
+import type { WebLLMTool } from "../ChatWebLLM";
 
 const MAX_DESC_DISPLAY_LENGTH = 250;
 const { uiBaseUrl } = config;
@@ -49,7 +49,10 @@ const searchDatasets: WebLLMTool = {
         const result = await searchDatasetsApi({ q: queryString });
 
         // store datasets for future tools
-        context.keyContextData.queryResult = result?.dataSets || {};
+        context.keyContextData.searchResults = result?.dataSets || [];
+        context.keyContextData.selectedDataset = undefined;
+        context.keyContextData.datasetSchema = undefined;
+        context.keyContextData.datasetSchemaReady = false;
 
         return await retrieveDatasets(queryString);
     },
