@@ -71,6 +71,7 @@ export interface WebLLMToolCallResult<T = any> {
     // the name of the tool called
     name: string;
     value: T;
+    args?: Record<string, any>;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
@@ -431,9 +432,16 @@ MULTI-STEP EXECUTION RULES:
         }
         const toolCall = reply.choices[0].message.tool_calls[0].function;
         const funcName = toolCall.name;
-        const funcArgsObj: Record<string, any> = toolCall?.arguments?.length
-            ? JSON.parse(toolCall.arguments)
-            : {};
+        let funcArgsObj: Record<string, any> = {};
+        if (toolCall?.arguments?.length) {
+            try {
+                funcArgsObj = JSON.parse(toolCall.arguments);
+            } catch (e) {
+                throw new Error(
+                    `Invalid tool arguments from model for tool ${funcName}`
+                );
+            }
+        }
         const toolCalled = tools.find((tool) => tool.name === funcName);
         if (!toolCalled) {
             throw new Error(
@@ -447,7 +455,8 @@ MULTI-STEP EXECUTION RULES:
         const result = await toolCalled.func.call(thisObj, ...funcArgs);
         return {
             name: toolCalled.name,
-            value: result as T
+            value: result as T,
+            args: funcArgsObj
         };
     }
 }
