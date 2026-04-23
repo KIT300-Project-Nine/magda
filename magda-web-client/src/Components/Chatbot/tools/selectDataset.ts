@@ -19,7 +19,7 @@ const selectDataset: WebLLMTool = {
             return `Dataset with ID ${datasetId} not found in the search results.`;
         }
 
-        context.dataset = selected;
+        context.keyContextData.selectedDataset = selected;
 
         return `Dataset "${selected.title}" selected. You can now examine its contents`;
     },
