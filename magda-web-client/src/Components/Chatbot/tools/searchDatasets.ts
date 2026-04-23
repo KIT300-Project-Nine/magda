@@ -44,6 +44,13 @@ const searchDatasets: WebLLMTool = {
         const context = (this as unknown) as ChainInput;
         const { queue } = context;
         queue.push(createChatEventMessageCompleteMsg("Searching datasets..."));
+
+        // call search API
+        const result = await searchDatasetsApi({ q: queryString });
+
+        // store datasets for future tools
+        context.keyContextData.queryResult = result?.dataSets || {};
+
         return await retrieveDatasets(queryString);
     },
     description:
