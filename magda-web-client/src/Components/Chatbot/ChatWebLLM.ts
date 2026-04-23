@@ -359,7 +359,14 @@ CONVERSATION RULES:
   - greetings (e.g. "hi", "how are you")
   - general knowledge questions
   - simple factual questions
-- If unsure, default to answering directly unless the request clearly involves datasets or data retrieval.`
+- If unsure, default to answering directly unless the request clearly involves datasets or data retrieval.
+
+DATASET WORKFLOW RULES:
+- To find datasets, use the searchDatasets tool.
+- After calling searchDatasets, you will receive a list of datasets.
+- You MUST select a dataset using the selectDataset tool before attempting to query it.
+- Only use queryDataset if a dataset is currently selected or available in context.
+- If no dataset is selected, ask the user to choose one or clearly state that selection is required.`
         };
 
         const messages =
