@@ -5,6 +5,13 @@ const selectDataset: WebLLMTool = {
     name: "selectDataset",
 
     func: async function (this: ChainInput, datasetId: string) {
+        console.log("[selectDataset] START");
+        console.log(
+            "[selectDataset] this.keyContextData:",
+            this.keyContextData
+        );
+        console.log("[selectDataset] datasetId:", datasetId);
+
         const context = (this as unknown) as ChainInput;
 
         const datasets = context.keyContextData.queryResult;
