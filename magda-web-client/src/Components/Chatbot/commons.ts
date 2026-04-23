@@ -16,6 +16,7 @@ export type LocationType = "DATASET_PAGE" | "DISTRIBUTION_PAGE" | "OTHERS";
 export interface KeyContextData {
     // latest query result
     queryResult: any;
+    selectedDataset?: any;
 }
 
 export interface ChainInput {
