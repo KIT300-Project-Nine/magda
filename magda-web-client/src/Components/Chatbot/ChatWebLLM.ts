@@ -365,8 +365,15 @@ DATASET WORKFLOW RULES:
 - To find datasets, use the searchDatasets tool.
 - After calling searchDatasets, you will receive a list of datasets.
 - You MUST select a dataset using the selectDataset tool before attempting to query it.
+- Do NOT call queryDataset if no dataset has been selected.
 - Only use queryDataset if a dataset is currently selected or available in context.
-- If no dataset is selected, ask the user to choose one or clearly state that selection is required.`
+- If no dataset is selected, ask the user to choose one or clearly state that selection is required.
+
+MULTI-STEP EXECUTION RULES:
+- If a user request requires multiple steps, you MUST continue calling tools until the task is fully completed.
+- Do NOT stop after selecting a dataset if further steps (e.g. querying) are required.
+- Do NOT describe what you will do next — execute the next tool instead.
+- Your task is only complete when the user's full request has been answered.`
         };
 
         const messages =
