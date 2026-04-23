@@ -1,6 +1,6 @@
 import { createChatEventMessageCompleteMsg } from "../Messaging";
 import { ChainInput } from "../commons";
-import { WebLLMTool } from "../ChatWebLLM";
+import type { WebLLMTool } from "../ChatWebLLM";
 import renderChart from "./renderChart";
 import { markdownTable } from "markdown-table";
 
