@@ -17,6 +17,12 @@ import {
 import { History, Location } from "history";
 import { ParsedDataset, ParsedDistribution } from "helpers/record";
 import createTools from "./tools";
+import {
+    MAX_TOOL_STEPS,
+    MAX_CONSECUTIVE_SAME_TOOL_CALLS,
+    filterAvailableTools,
+    serializeToolResult
+} from "./orchestration";
 
 class AgentChain {
     static agentChain: AgentChain | null = null;
@@ -73,7 +79,11 @@ class AgentChain {
     public dataset: ParsedDataset | undefined;
     public distribution: ParsedDistribution | undefined;
     public keyContextData: KeyContextData = {
-        queryResult: undefined
+        queryResult: undefined,
+        searchResults: undefined,
+        selectedDataset: undefined,
+        datasetSchema: undefined,
+        datasetSchemaReady: false
     };
     public debug: boolean = false;
     public directModelAccess: boolean = false;
@@ -239,19 +249,28 @@ class AgentChain {
             const { queue } = input;
             try {
                 console.log("[Magda][chain] STEP START");
-
-                const tools = await createTools(input);
-                const maxSteps = 5;
-
-                console.log(
-                    "TOOLS AVAILABLE:",
-                    tools.map((t) => t.name)
-                );
+                const maxSteps = MAX_TOOL_STEPS;
 
                 //start with initial question
                 let currentMessages: any[] = [...this.agentMessages];
+                let previousCallSignature = "";
+                let repeatedCallCount = 0;
 
                 for (let step = 0; step < maxSteps; step++) {
+                    const tools = await createTools(input);
+                    const availableTools = filterAvailableTools(tools, input);
+
+                    console.log(
+                        "TOOLS AVAILABLE:",
+                        availableTools.map((t) => t.name)
+                    );
+
+                    if (!availableTools.length) {
+                        throw new Error(
+                            "No tools are available for the current execution state."
+                        );
+                    }
+
                     console.log("[Magda][chain] step:", step);
                     console.log(
                         "[Magda][chain] currentMessages:",
@@ -260,7 +279,7 @@ class AgentChain {
 
                     const result = await this.model.invokeTool(
                         currentMessages,
-                        tools,
+                        availableTools,
                         input
                     );
 
@@ -278,21 +297,31 @@ class AgentChain {
                         return result.value;
                     }
 
+                    const currentCallSignature = `${
+                        result.name
+                    }:${JSON.stringify(result.args || {})}`;
+                    if (currentCallSignature === previousCallSignature) {
+                        repeatedCallCount += 1;
+                        if (
+                            repeatedCallCount >= MAX_CONSECUTIVE_SAME_TOOL_CALLS
+                        ) {
+                            throw new Error(
+                                `The tool call loop is repeating ${result.name} with the same arguments.`
+                            );
+                        }
+                    } else {
+                        repeatedCallCount = 0;
+                        previousCallSignature = currentCallSignature;
+                    }
+
                     currentMessages.push({
                         role: "user",
                         content: `Tool ${
                             result.name
-                        } returned: ${JSON.stringify(result.value)}`
+                        } returned: ${serializeToolResult(result.value)}`
                     });
 
                     console.log("[Magda][chain TOOL RESULT]:", result);
-
-                    currentMessages.push({
-                        role: "user",
-                        content: `Tool ${
-                            result.name
-                        } returned: ${JSON.stringify(result.value)}`
-                    });
 
                     console.log("[Magda][chain TOOL USED]:", result.name);
                     console.log("[Magda][chain TOOL OUTPUT]:", result.value);

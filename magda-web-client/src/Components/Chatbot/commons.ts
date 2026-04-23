@@ -1,7 +1,7 @@
 import type AsyncQueue from "@ai-zen/async-queue";
 import type { ChatEventMessage } from "./Messaging";
 import type { History, Location } from "history";
-import ChatWebLLM from "./ChatWebLLM";
+import type ChatWebLLM from "./ChatWebLLM";
 import { ParsedDataset, ParsedDistribution } from "helpers/record";
 export type LocationType = "DATASET_PAGE" | "DISTRIBUTION_PAGE" | "OTHERS";
 
@@ -15,8 +15,17 @@ export type LocationType = "DATASET_PAGE" | "DISTRIBUTION_PAGE" | "OTHERS";
  */
 export interface KeyContextData {
     // latest query result
-    queryResult: any;
+    queryResult?: any;
+    // datasets returned from searchDatasets tool
+    searchResults?: any[];
     selectedDataset?: any;
+    // schema discovered by queryDataset tool
+    datasetSchema?: {
+        distributionRef: string | number;
+        title: string;
+        columns: string[];
+    }[];
+    datasetSchemaReady?: boolean;
 }
 
 export interface ChainInput {
