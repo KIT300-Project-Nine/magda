@@ -184,6 +184,8 @@ class AgentChain {
             role: "user",
             content: question
         });
+        // Reset chart rendered flag for new query
+        this.keyContextData.chartRendered = false;
         const queue = new AsyncQueue<ChatEventMessage>();
         const input: ChainInput = {
             question,
@@ -237,9 +239,8 @@ class AgentChain {
             }
             resolve(buffer);
         }).catch((e) => {
-            createChatEventMessage(EVENT_TYPE_ERROR, {
-                error: e
-            });
+            queue.push(createChatEventMessageErrorMsg(e as Error));
+            queue.done();
         });
         return queue;
     }
@@ -252,7 +253,7 @@ class AgentChain {
                 const maxSteps = MAX_TOOL_STEPS;
 
                 //start with initial question
-                let currentMessages: any[] = [...this.agentMessages];
+                const currentMessages: any[] = [...this.agentMessages];
                 let previousCallSignature = "";
                 let repeatedCallCount = 0;
 
@@ -287,6 +288,26 @@ class AgentChain {
 
                     //We are done if it's a conversational response
                     if (result.name === "Conversational Response") {
+                        const isDefaultAgentAvailable = availableTools.some(
+                            (t) => t.name === "defaultAgent"
+                        );
+
+                        if (!isDefaultAgentAvailable) {
+                            console.log(
+                                "[Magda][chain] LLM produced text instead of using a required tool. Continuing chain."
+                            );
+                            currentMessages.push({
+                                role: "assistant",
+                                content: result.value
+                            });
+                            currentMessages.push({
+                                role: "user",
+                                content:
+                                    "You must call the next tool to continue the workflow. Do not answer conversationally yet. Please use one of the available tools."
+                            });
+                            continue;
+                        }
+
                         this.agentMessages.push({
                             role: "assistant",
                             content: result.value

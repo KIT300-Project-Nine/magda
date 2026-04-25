@@ -26,6 +26,9 @@ export interface KeyContextData {
         columns: string[];
     }[];
     datasetSchemaReady?: boolean;
+    unqueryableDatasetIds?: string[];
+    // whether a chart has been rendered in the current chain
+    chartRendered?: boolean;
 }
 
 export interface ChainInput {

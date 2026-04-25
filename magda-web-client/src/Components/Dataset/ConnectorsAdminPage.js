@@ -64,7 +64,7 @@ class StoriesAdminPage extends Component {
     }
 
     renderConnector(connector) {
-        let status = (connector.job && connector.job.status) || "none";
+        const status = (connector.job && connector.job.status) || "none";
         return (
             <tr>
                 <td>{connector.name}</td>

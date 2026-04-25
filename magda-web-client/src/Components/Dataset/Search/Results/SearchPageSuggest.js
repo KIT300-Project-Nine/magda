@@ -47,7 +47,7 @@ export default class SearchPageSuggest extends React.Component {
      * toggles whether or not the suggest a dataset form is displayed or not
      */
     toggleSuggest = () => {
-        var showSuggest = this.state.showSuggest;
+        const showSuggest = this.state.showSuggest;
         this.setState(() => {
             return {
                 showSuggest: !showSuggest

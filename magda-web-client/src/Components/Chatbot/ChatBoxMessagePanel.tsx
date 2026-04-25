@@ -16,7 +16,6 @@ import {
     EVENT_TYPE_ERROR,
     EVENT_TYPE_PARTIAL_MSG_FINISH,
     EVENT_TYPE_PING,
-    NoErrorStop,
     STREAM_TYPE,
     STREAM_TYPE_AGENT_STEP,
     STREAM_TYPE_PARTIAL_MSG,
@@ -215,16 +214,22 @@ const ChatBoxMessagePanel: FunctionComponent<PropsType> = (props) => {
 
             if (eventMessage.event === EVENT_TYPE_ERROR) {
                 resetMessageProcessingStatus();
-                throw new Error(
-                    eventMessage?.data?.error
-                        ? String(eventMessage.data.error)
-                        : `Remote stream error: ${eventMessage.data}`
-                );
+
+                const errStr = eventMessage?.data?.error
+                    ? String(eventMessage.data.error)
+                    : `Remote stream error: ${eventMessage.data}`;
+
+                addMessage(messageQueueRef, {
+                    type: "bot",
+                    content: `**⚠️ Error:**\n\n${errStr}`
+                });
+                setDataReloadToken(Math.random().toString());
+                return;
             }
 
             if (eventMessage.event === EVENT_TYPE_CLOSE) {
                 resetMessageProcessingStatus();
-                throw new NoErrorStop();
+                return;
             }
 
             if (

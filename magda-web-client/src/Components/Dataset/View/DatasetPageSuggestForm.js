@@ -48,7 +48,7 @@ export default class DatasetPageSuggestForm extends React.Component {
      * toggles whether or not the suggest a dataset form is displayed or not
      */
     toggleShowForm = () => {
-        var showSuggest = this.state.showSuggest;
+        const showSuggest = this.state.showSuggest;
         this.setState(() => {
             return {
                 showSuggest: !showSuggest,

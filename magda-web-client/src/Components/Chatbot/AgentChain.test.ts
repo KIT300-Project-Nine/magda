@@ -41,17 +41,12 @@ describe("AgentChain helpers", () => {
 
         input.keyContextData.searchResults = [{ identifier: "dataset-1" }];
         available = filterAvailableTools(tools, input).map((item) => item.name);
-        expect(available).toEqual([
-            "searchDatasets",
-            "defaultAgent",
-            "selectDataset"
-        ]);
+        expect(available).toEqual(["searchDatasets", "selectDataset"]);
 
         input.keyContextData.selectedDataset = { identifier: "dataset-1" };
         available = filterAvailableTools(tools, input).map((item) => item.name);
         expect(available).toEqual([
             "searchDatasets",
-            "defaultAgent",
             "selectDataset",
             "queryDataset"
         ]);

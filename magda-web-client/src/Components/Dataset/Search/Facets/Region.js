@@ -19,7 +19,7 @@ class Region extends Component {
     }
 
     onToggleRegionOption(region) {
-        let { regionId, regionType } = region;
+        const { regionId, regionType } = region;
         this.props.updateQuery({
             regionId,
             regionType,
@@ -79,7 +79,7 @@ class Region extends Component {
 }
 
 function mapStateToProps(state) {
-    let { datasetSearch, facetRegionSearch, regionMapping } = state;
+    const { datasetSearch, facetRegionSearch, regionMapping } = state;
     return {
         activeRegion: datasetSearch.activeRegion,
         regionSearchResults: facetRegionSearch.data,

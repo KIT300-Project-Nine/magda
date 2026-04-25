@@ -13,8 +13,8 @@ export default function toggleBasicOption(
         page: undefined
     });
 
-    let existingOptions = activeOptions.map((o) => o.value);
-    let index = existingOptions.indexOf(option.value);
+    const existingOptions = activeOptions.map((o) => o.value);
+    const index = existingOptions.indexOf(option.value);
     if (index > -1) {
         updateQuery({
             [key]: [

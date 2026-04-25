@@ -103,7 +103,7 @@ class Account extends React.Component {
 }
 
 function mapStateToProps(state) {
-    let {
+    const {
         userManagement: { user }
     } = state;
 
