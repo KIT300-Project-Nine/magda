@@ -1,8 +1,7 @@
 package au.csiro.data61.magda.directives
 
 import akka.http.scaladsl.model.StatusCodes.{Forbidden, InternalServerError, Unauthorized}
-import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
+
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.AuthorizationFailedRejection
 import akka.http.scaladsl.server.{Directive0, Directive1, ValidationRejection}
@@ -31,13 +30,13 @@ object AuthDirectives {
     * @return // Directive1[AuthDecision]
     */
   def withAuthDecision(
-      authApiClient: AuthApiClient,
-      config: AuthDecisionReqConfig,
-      enforceAuth: Boolean = false // New param, default keeps existing behaviour
-  ): Directive1[AuthDecision] = (extractLog & getJwt).tflatMap {
+    authApiClient: AuthApiClient,
+    config: AuthDecisionReqConfig,
+    enforceAuth: Boolean = false
+): Directive1[AuthDecision] =
+  (extractLog & getJwt).tflatMap {
     case (log, jwt) =>
-      // Call the external Auth API (OPA) to get the decision
-      onComplete(authApiClient.getAuthDecision(jwt, config)).flatMap { // Extract logger and JWT token from the request
+      onComplete(authApiClient.getAuthDecision(jwt, config)).flatMap {
 
         case Success(authDecision: AuthDecision) =>
           if (enforceAuth) {
@@ -80,21 +79,48 @@ object AuthDirectives {
             // Non-enforcing mode (default)
             // Used by search, list endpoints, facets, etc. - never returns 401/403
             provide(authDecision)
+          } else if (!authDecision.hasResidualRules && authDecision.result.exists(Auth.isTrueEquivalent)) {
+            provide(authDecision)
+          } else if (jwt.isEmpty) {
+            complete(
+              Unauthorized,
+              JsObject(
+                "error" -> JsString("unauthorized"),
+                "message" -> JsString(
+                  "This resource is private or restricted. Please log in to access it."
+                ),
+                "suggestLogin" -> JsBoolean(true)
+              )
+            )
+          } else {
+            complete(
+              Forbidden,
+              JsObject(
+                "error" -> JsString("forbidden"),
+                "message" -> JsString(
+                  "You do not have permission to access this restricted dataset."
+                )
+              )
+            )
           }
 
-        // Error handling when OPA (the Auth API) call itself fails
-        // Return 500 code here so that search and other operations are not blocked
-        // If the authorization service is temporarily down.
         case Failure(e) =>
-          log.error("Failed to get auth decision: {}", e) // Log the exception for debugging
-          // Return 500 so other operations are not blocked
+          log.error(
+            e,
+            s"Failed to get auth decision for operation `${config.operationUri}`"
+          )
+
           complete(
             InternalServerError,
-            s"An error occurred while retrieving auth decision for the request."
+            JsObject(
+              "error" -> JsString("authorization_error"),
+              "message" -> JsString(
+                "An error occurred while checking access permissions."
+              )
+            )
           )
       }
   }
-
 
   /**
     * Make one or more auth decisions based on supplied auth decision request config list.
@@ -253,11 +279,14 @@ object AuthDirectives {
   }
 
   // New: Can use this 401 unauthorized response elsewhere.
-  def rejectWithUnauthorized(message: String = "Unauthorized"): Directive0 = complete(Unauthorized, JsObject( // Return HTTP 401 status
-    "error" -> JsString("unauthorized"), // Consistent error type for frontend
-    "message" -> JsString(message),      // Human-readable message (customizable)
-    "suggestLogin" -> JsBoolean(true)    // Flag that tells the frontend to show login prompt
-  ))
+  def rejectWithUnauthorized(message: String = "You are not authorized to access this resource. Please login if you have access."): Directive0 = {
+  val errorBody = JsObject(
+    "error"        -> JsString("unauthorized"),   // Consistent error type for frontend
+    "message"      -> JsString(message),          // Human-readable message (customizable)
+    "suggestLogin" -> JsBoolean(true)             // Flag that tells the frontend to show login prompt
+  )
+  complete(StatusCodes.Unauthorized, errorBody)
+ }
 
   /**
    * New: Directive for single-record / private resource access (e.g. GET /v0/registry/records/{id} or dataset detail page)

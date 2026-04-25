@@ -185,6 +185,17 @@ class ElasticSearchQueryer(indices: Indices = DefaultIndices)(
       )
   }
 
+  /**
+   * Executes dataset search using a duel-query approach:
+   *  
+   *  1. A candidate query retrieves the full result set without dataset-level auth filtering
+   *  2. An authorised query applies Magda's auth filter to determine which datasets the current user can access.
+   * 
+   * The results are then compared, and datasets not present in the authorised result are returned as restricted placeholders
+   * rather than being removed
+   * 
+   * This allows the frontend to display restricted datasets without blocking the entire search response
+   */
   override def search(
       inputQuery: Query,
       start: Long,
@@ -205,35 +216,54 @@ class ElasticSearchQueryer(indices: Indices = DefaultIndices)(
             augmentWithHybridSearch(inputQuery)
           )
         ).flatMap { queryWithBoostRegions =>
-          val query = buildQueryWithAggregations(
+          val candidateQuery = buildQueryWithAggregations(
             queryWithBoostRegions,
             start,
             limit,
             MatchAll,
-            requestedFacetSize
+            requestedFacetSize,
+            applyDatasetAuthFilter = false
           )
+
+          val authorisedQuery = buildQuery(
+            queryWithBoostRegions,
+            start,
+            limit,
+            MatchAll,
+            applyDatasetAuthFilter = true
+          )
+
           if (debugMode) {
-            logger.info(client.show(query).query)
+            logger.info(client.show(candidateQuery).query)
           }
           Future
             .sequence(
               Seq(
                 fullRegionsFuture,
                 client
-                  .execute(query)
+                  .execute(candidateQuery)
                   .flatMap {
                     case results: RequestSuccess[SearchResponse] =>
                       Future.successful((results.result, MatchAll))
                     case IllegalArgumentException(e) => throw e
                     case ESGenericException(e)       => throw e
+                  },
+                  client.execute(authorisedQuery).flatMap {
+                    case results: RequestSuccess[SearchResponse] =>
+                      Future.successful(results.result)
+                    case IllegalArgumentException(e) => throw e
+                    case ESGenericException(e) => throw e
                   }
               )
             )
             .map {
               case Seq(
                   fullRegions: List[Option[Region]],
-                  (response: SearchResponse, strategy: SearchStrategy)
+                  (candidateResponse: SearchResponse, strategy: SearchStrategy),
+                  authorisedResponse: SearchResponse
                   ) =>
+                
+                val authorisedDatasetIds = authorisedResponse.to[DataSet].map(_.identifier).toSet
                 val newQueryRegions =
                   inputRegionsList
                     .zip(fullRegions)
@@ -246,9 +276,10 @@ class ElasticSearchQueryer(indices: Indices = DefaultIndices)(
                   queryWithBoostRegions.copy(regions = newQueryRegions)
                 buildSearchResult(
                   outputQuery,
-                  response,
+                  candidateResponse,
                   strategy,
-                  requestedFacetSize
+                  requestedFacetSize,
+                  authorisedDatasetIds
                 )
             }
         }
@@ -367,15 +398,49 @@ class ElasticSearchQueryer(indices: Indices = DefaultIndices)(
 
     Math.max(queryFacetSize, requestedFacetSize)
   }
+  
+  /**
+    * Returns either the full dataset or a restricted placeholder.
+    * 
+    * A dataset is considered authorised if its identifier appears in the auth-filtered search result. If not, sensitive fields are removed 
+    * and restricted = true is set so the frontend can display an "unauthorised access" message instead of full dataset details.
+    */
+    private def maskDatasetIfRestricted(
+      dataset: DataSet,
+      authorisedDatasetIds: Set[String]
+    ): DataSet = {
+      if (authorisedDatasetIds.contains(dataset.identifier)){
+        // User is uthorised -> return dataset normally
+        dataset.copy(years = None)
+      } else {
+        // User is not authorised -> return minimal placeholder
+        dataset.copy(
+          title = None,
+          description = None,
+          publisher = None,
+          distributions = Nil,
+          restricted = Some(true),
+          years = None
+        )
+      }
+    }
 
   /**
-    * Turns an ES response into a magda SearchResult.
+    * Converts an Elasticsearch response into a SearchResult
+    * 
+    * The response is built from the candidate (non-auth filtered) search results.
+    * Each dataset is then checked against the authorisedDatasetIds:
+    *   - If authorised -> full dataset is returned
+    *   - If not authorised -> dataset is masked and returned as a restricted placeholder
+    * 
+    * This ensures restricted datasets remain visible in search results without exposing sensitive information or blocking the entire response.
     */
   def buildSearchResult(
       query: Query,
       response: SearchResponse,
       strategy: SearchStrategy,
-      facetSize: Int
+      facetSize: Int,
+      authorisedDatasetIds: Set[String]
   ): SearchResult = {
     val aggs = response.aggregations
 
@@ -407,7 +472,9 @@ class ElasticSearchQueryer(indices: Indices = DefaultIndices)(
       query = query,
       hitCount = response.totalHits,
       hitCountRelation = Some(response.hits.total.relation),
-      dataSets = response.to[DataSet].map(_.copy(years = None)).toList,
+      
+      // Apply per-dataset masking before returning results to the frontend
+      dataSets = response.to[DataSet].map(dataset => maskDatasetIfRestricted(dataset, authorisedDatasetIds)).toList,
       temporal = Some(
         PeriodOfTime(
           start = getDateAggResult(
@@ -479,14 +546,15 @@ class ElasticSearchQueryer(indices: Indices = DefaultIndices)(
       query: Query,
       start: Long,
       limit: Int,
-      strategy: SearchStrategy
+      strategy: SearchStrategy,
+      applyDatasetAuthFilter: Boolean = true
   ): SearchRequest = {
     val searchReq = ElasticDsl
       .search(indices.getIndex(config, Indices.DataSetsIndex))
       .limit(limit)
       .start(start.toInt)
       .trackTotalHits(true)
-      .query(buildEsQuery(query, strategy))
+      .query(buildEsQuery(query, strategy, applyDatasetAuthFilter))
     if (HybridSearchConfig.enabled) {
       searchReq.searchPipeline(HybridSearchConfig.searchPipelineId)
     } else {
@@ -500,21 +568,22 @@ class ElasticSearchQueryer(indices: Indices = DefaultIndices)(
       start: Long,
       limit: Int,
       strategy: SearchStrategy,
-      facetSize: Int
+      facetSize: Int,
+      applyDatasetAuthFilter: Boolean = true
   ) =
     addAggregations(
       buildQuery(
         query,
         start,
         limit,
-        strategy
+        strategy,
+        applyDatasetAuthFilter
       ),
       query,
       strategy,
       facetSize
     ).sourceExclude(
       // --- do not include accessControl metadata and vectors
-      "accessControl",
       "queryContextVector",
       "distributions"
     )
@@ -609,7 +678,8 @@ class ElasticSearchQueryer(indices: Indices = DefaultIndices)(
 
   private def buildEsQuery(
       query: Query,
-      strategy: SearchStrategy
+      strategy: SearchStrategy,
+      applyDatasetAuthFilter: Boolean = true
   ): QueryDefinition = {
     val geomScorerQuery = setToOption(query.boostRegions)(
       seq => should(seq.map(region => regionToGeoShapeQuery(region, indices)))
@@ -637,7 +707,7 @@ class ElasticSearchQueryer(indices: Indices = DefaultIndices)(
     functionScoreQuery()
       .query(
         must(
-          queryToQueryDef(query, strategy)
+          queryToQueryDef(query, strategy, applyDatasetAuthFilter)
         )
       )
       .functions(allScorers)
@@ -744,15 +814,29 @@ class ElasticSearchQueryer(indices: Indices = DefaultIndices)(
     }
   }
 
-  /** Processes a general magda Query into a specific ES QueryDefinition */
+  /**
+   * Converts a Magda Query into an Elasticsearch QueryDefinition.
+   * 
+   * applyDatasetAuthFilter controls whether dataset-level auth filtering is applied:
+   *   - true -> applies Magda's auth filter (used for authorised query)
+   *   - false -> skips dataset auth filtering (used for candidate query)
+   * 
+   * This enables the dual-query approach where datasets can be masked instead of being completely removed from search results.
+   */
   private def queryToQueryDef(
       query: Query,
-      strategy: SearchStrategy
+      strategy: SearchStrategy,
+      applyDatasetAuthFilter: Boolean = true
   ): QueryDefinition = {
-
-    val datasetAuthQuery = query.authDecision.get.getDatasetDecisionQuery
+    // Toggle dataset auth filtering depending on whether this is a candidate or authorised query
+    val datasetAuthQuery = 
+      if (applyDatasetAuthFilter)
+        query.authDecision.map(_.getDatasetDecisionQuery).getOrElse(MatchNoneQuery())
+      else
+        matchAllQuery()
+    
     val distributionAuthQuery =
-      query.authDecision.get.getDistributionDecisionQuery
+      query.authDecision.map(_.getDistributionDecisionQuery).getOrElse(MatchNoneQuery())
 
     val datasetTenantIdQuery = query.tenantId
       .map(

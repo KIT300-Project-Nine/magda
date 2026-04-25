@@ -117,7 +117,12 @@ package misc {
       accrualPeriodicityRecurrenceRule: Option[String] = None,
       accessNotes: Option[DataSetAccessNotes] = None,
       queryContext: Option[String] = None,
-      queryContextVector: Option[Array[Double]] = None
+      queryContextVector: Option[Array[Double]] = None,
+
+      // Added, indicates that the dataset exists in search results but should be shown
+      // as a restricted placeholder rather than a full dataset response
+      // Used by the Search API to tell the frontend this dataset should be displayed as restricted rather than as a normal dataset card.
+      restricted: Option[Boolean] = None
   ) {
 
     override def toString: String =
@@ -785,7 +790,12 @@ package misc {
           "publishingState" -> dataSet.publishingState.toJson,
           "accessNotes" -> dataSet.accessNotes.toJson,
           "queryContext" -> dataSet.queryContext.toJson,
-          "queryContextVector" -> dataSet.queryContextVector.toJson
+          "queryContextVector" -> dataSet.queryContextVector.toJson,
+          
+          // Added, indicates whether this dataset has been masked by the search API due to access restrictions.
+          // When true, the dataset is returned as a minimal placeholder (rather than a full object) so the frontend
+          // can display an "unauthorised access" message without blocking the entire search result.
+          "restricted" -> dataSet.restricted.toJson
         )
         if (!dataSet.accessControl.isEmpty) {
           jsFields += ("accessControl" -> dataSet.accessControl.toJson)
@@ -835,7 +845,8 @@ package misc {
             convertOptionField[DataSetAccessNotes]("accessNotes", json),
           queryContext = convertOptionField[String]("queryContext", json),
           queryContextVector =
-            convertOptionField[Array[Double]]("queryContextVector", json)
+            convertOptionField[Array[Double]]("queryContextVector", json),
+          restricted = convertOptionField[Boolean]("restricted", json)
         )
       }
     }

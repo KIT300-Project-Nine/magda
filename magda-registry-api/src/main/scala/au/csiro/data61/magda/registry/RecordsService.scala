@@ -15,9 +15,11 @@ import au.csiro.data61.magda.registry.Directives.{
   requireRecordUpdateOrCreateWhenNonExistPermission
 }
 import au.csiro.data61.magda.directives.AuthDirectives.{
+  withAuthDecision,
   requirePermission,
   requireUnconditionalAuthDecision,
   requireUserId,
+
   requirePermissionForPrivateResource, // Added import
   withAuthDecision
 }
@@ -146,10 +148,10 @@ class RecordsService(
           authClient,
           "object/record/delete",
           recordId,
-          // when the record doesn't not exist (or not accessible within current tenant)
-          // we will check "unconditional" `delete` permission. i.e.
-          // users with "unconditional" `delete` permission will get 200 status code with "record is deleted" response (this is for matching existing behaviour).
-          // users without this permission will not be able to know that the record has been removed.
+          // When the record doesn't not exist (or not accessible within current tenant)
+          // Will check "unconditional" `delete` permission. i.e.
+          // Users with "unconditional" `delete` permission will get 200 status code with "record is deleted" response (this is for matching existing behaviour).
+          // Users without this permission will not be able to know that the record has been removed.
           onRecordNotFound = Some(
             () =>
               requireUnconditionalAuthDecision(
