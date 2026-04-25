@@ -1,6 +1,7 @@
 package au.csiro.data61.magda.directives
 
 import akka.http.scaladsl.model.StatusCodes.{Forbidden, InternalServerError, Unauthorized}
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.AuthorizationFailedRejection
@@ -39,56 +40,31 @@ object AuthDirectives {
       onComplete(authApiClient.getAuthDecision(jwt, config)).flatMap {
 
         case Success(authDecision: AuthDecision) =>
-          if (enforceAuth) {
-            // Enforce 401 return when permission is denied
-           if (authDecision.hasResidualRules) {
-              // Partial evaluation case. Cannot decide yes/no for every record
-              log.warning("Partial evaluation only for operation `{}`. Treating as unauthorized.", config.operationUri)
-              complete(
-              Unauthorized,
-              s"You are not authorized to perform `${config.operationUri}` on the requested resource. Please login if you have access."
-            )
-            } else if (authDecision.result.isDefined && Auth.isTrueEquivalent(authDecision.result.get)) {
-              // Permission granted, continue
-              provide(authDecision)
-            } else { // Fixed indentation
-              // Distinguish 401 (not logged in) vs 403 (logged in but denied)
-              getJwt.flatMap { jwtOpt =>
-                val isLoggedIn = jwtOpt.isDefined
-
-                if (!isLoggedIn) {
-                  // Not logged in + private resource friendly 401
-                  complete(
-                    Unauthorized,
-                    "This resource is private or restricted. Please log in to access it."
-                  )
-                } else {
-                  // User is logged in but still doesn't have permission -> return 403
-                  // Use a clear, user-friendly message instead of a generic one
-                  complete(
-                    Forbidden,
-                    JsObject(
-                      "error" -> JsString("forbidden"),
-                      "message" -> JsString("You do not have permission to access this restricted dataset.")
-                    )
-                  )
-                }
-              }
-            }
-          } else { // Also indentation fixed.
-            // Non-enforcing mode (default)
-            // Used by search, list endpoints, facets, etc. - never returns 401/403
+          if (!enforceAuth) {
             provide(authDecision)
-          } else if (!authDecision.hasResidualRules && authDecision.result.exists(Auth.isTrueEquivalent)) {
+          } else if (authDecision.hasResidualRules) {
+            log.warning(
+              "Partial evaluation only for operation `{}`. Treating as unauthorized.",
+              config.operationUri
+            )
+            complete(
+              Unauthorized,
+              JsObject(
+                "error" -> JsString("unauthorized"),
+                "message" -> JsString(
+                  s"You are not authorized to perform `${config.operationUri}` on the requested resource. Please login if you have access."
+                ),
+                "suggestLogin" -> JsBoolean(true)
+              )
+            )
+          } else if (authDecision.result.exists(Auth.isTrueEquivalent)) {
             provide(authDecision)
           } else if (jwt.isEmpty) {
             complete(
               Unauthorized,
               JsObject(
                 "error" -> JsString("unauthorized"),
-                "message" -> JsString(
-                  "This resource is private or restricted. Please log in to access it."
-                ),
+                "message" -> JsString("This resource is private or restricted. Please log in to access it."),
                 "suggestLogin" -> JsBoolean(true)
               )
             )
@@ -97,9 +73,7 @@ object AuthDirectives {
               Forbidden,
               JsObject(
                 "error" -> JsString("forbidden"),
-                "message" -> JsString(
-                  "You do not have permission to access this restricted dataset."
-                )
+                "message" -> JsString("You do not have permission to access this restricted dataset.")
               )
             )
           }
@@ -285,7 +259,7 @@ object AuthDirectives {
     "message"      -> JsString(message),          // Human-readable message (customizable)
     "suggestLogin" -> JsBoolean(true)             // Flag that tells the frontend to show login prompt
   )
-  complete(StatusCodes.Unauthorized, errorBody)
+  complete(Unauthorized, errorBody)
  }
 
   /**

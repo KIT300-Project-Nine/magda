@@ -930,57 +930,49 @@ class RecordsServiceRO(
       )
     )
   )
+
   def getById: Route = get {
-<<<<<<< HEAD
     path(Segment) { id =>
       requiresTenantId { tenantId =>
-        withAuthDecision(
-  authApiClient,
-  AuthDecisionReqConfig("object/record/read")
-) { authDecision => 
-=======
-  path(Segment) { id =>
-    requiresTenantId { tenantId =>
-      requirePermissionForPrivateResource(
-        authApiClient,
-        "object/record/read",
-        Some(JsObject("recordId" -> JsString(id)))
-      ) {
-        withAuthDecision(
+        requirePermissionForPrivateResource(
           authApiClient,
-          AuthDecisionReqConfig("object/record/read")
-        ) { authDecision =>
->>>>>>> 4acf4d162 (sbt compile approved: Implemented dual-query backend filtering to compare authorised vs candidate search results and return either full datasets or restricted placeholders (restricted = true) without blocking the overall search response. Waiting for Mahi to review.)
-          parameters('aspect.*, 'optionalAspect.*, 'dereference.as[Boolean].?) {
-            (aspects, optionalAspects, dereference) =>
-              onCompleteBlockingTask {
-                DB readOnly { implicit session =>
-                  session.queryTimeout(this.defaultQueryTimeout)
-                  recordPersistence.getByIdWithAspects(
-                    tenantId,
-                    authDecision,
-                    id,
-                    aspects,
-                    optionalAspects,
-                    dereference
-                  ) match {
-                    case Some(record) => complete(record)
-                    case None =>
-                      complete(
-                        StatusCodes.NotFound,
-                        ApiError(
-                          "No record exists with that ID or it does not have the required aspects."
+          "object/record/read",
+          Some(JsObject("recordId" -> JsString(id)))
+        ) {
+          withAuthDecision(
+            authApiClient,
+            AuthDecisionReqConfig("object/record/read")
+          ) { authDecision =>
+            parameters('aspect.*, 'optionalAspect.*, 'dereference.as[Boolean].?) {
+              (aspects, optionalAspects, dereference) =>
+                onCompleteBlockingTask {
+                  DB readOnly { implicit session =>
+                    session.queryTimeout(this.defaultQueryTimeout)
+                    recordPersistence.getByIdWithAspects(
+                      tenantId,
+                      authDecision,
+                      id,
+                      aspects,
+                      optionalAspects,
+                      dereference
+                    ) match {
+                      case Some(record) => complete(record)
+                      case None =>
+                        complete(
+                          StatusCodes.NotFound,
+                          ApiError(
+                            "No record exists with that ID or it does not have the required aspects."
+                          )
                         )
-                      )
+                    }
                   }
                 }
-              }
+            }
           }
         }
       }
     }
   }
-}
 
   /**
     * @apiGroup Registry Record Service
@@ -1049,7 +1041,6 @@ class RecordsServiceRO(
       requiresTenantId { tenantId =>
         withAuthDecision(
           authApiClient,
-<<<<<<< HEAD
           AuthDecisionReqConfig("object/record/read")
         ) { authDecision =>
           onCompleteBlockingTask {
@@ -1057,30 +1048,13 @@ class RecordsServiceRO(
               session.queryTimeout(this.defaultQueryTimeout)
               recordPersistence
                 .getById(tenantId, authDecision, id) match {
-=======
-          "object/record/read",
-          Some(JsObject("recordId" -> JsString(id)))
-        ) {
-          withAuthDecision(
-            authApiClient,
-            AuthDecisionReqConfig("object/record/read")
-          ) { authDecision =>
-            onCompleteBlockingTask {
-              DB readOnly { implicit session => session.queryTimeout(this.defaultQueryTimeout)
-
-              recordPersistence.getById(
-                tenantId,
-                authDecision,
-                id
-              ) match {
->>>>>>> 4acf4d162 (sbt compile approved: Implemented dual-query backend filtering to compare authorised vs candidate search results and return either full datasets or restricted placeholders (restricted = true) without blocking the overall search response. Waiting for Mahi to review.)
                 case Some(record) => complete(record)
                 case None =>
                   complete(
                     StatusCodes.NotFound,
                     ApiError("No record exists with that ID.")
                   )
-              }
+                }
               }
             }
           }
@@ -1150,50 +1124,30 @@ class RecordsServiceRO(
       )
     )
   )
+
   def getByIdInFull: Route = get {
     path("inFull" / Segment) { id =>
       requiresTenantId { tenantId =>
         withAuthDecision(
           authApiClient,
-<<<<<<< HEAD
           AuthDecisionReqConfig("object/record/read")
         ) { authDecision =>
           onCompleteBlockingTask {
             DB readOnly { implicit session =>
               session.queryTimeout(this.defaultQueryTimeout)
-              recordPersistence
-                .getCompleteRecordById(tenantId, authDecision, id) match {
+
+              recordPersistence.getCompleteRecordById(
+                tenantId,
+                authDecision,
+                id
+              ) match {
                 case Some(record) => complete(record)
                 case None =>
                   complete(
                     StatusCodes.NotFound,
                     ApiError("No record exists with that ID.")
-=======
-          "object/record/read",
-          Some(JsObject("recordId" -> JsString(id)))
-        ) {
-          withAuthDecision(
-            authApiClient,
-            AuthDecisionReqConfig("object/record/read")
-          ) { authDecision =>
-            onCompleteBlockingTask {
-              DB readOnly { implicit session => 
-                session.queryTimeout(this.defaultQueryTimeout)
-
-                recordPersistence.getCompleteRecordById(
-                  tenantId,
-                  authDecision,
-                  id
-                ) match {
-                  case Some(record) => complete(record)
-                  case None =>
-                    complete(
-                      StatusCodes.NotFound,
-                      ApiError("No record exists with that ID.")
->>>>>>> 4acf4d162 (sbt compile approved: Implemented dual-query backend filtering to compare authorised vs candidate search results and return either full datasets or restricted placeholders (restricted = true) without blocking the overall search response. Waiting for Mahi to review.)
                   )
-                }
-               }
+              }
             }
           }
         }
