@@ -30,10 +30,11 @@ export async function getDistColumnNames(
 export async function createQueryDatasetTool(
     input: ChainInput
 ): Promise<WebLLMTool | null> {
-    async function queryDataset(this: ChainInput) {
+    async function queryDataset(this: ChainInput, keyword?: string) {
         console.log("[queryDataset] START");
         console.log("[queryDataset] this.keyContextData:", this.keyContextData);
         console.log("[queryDataset] this.dataset:", this.dataset);
+        console.log("[queryDataset] keyword:", keyword);
         const selectedDataset = this.keyContextData?.selectedDataset;
         const targetDataset = selectedDataset || this.dataset;
 
@@ -61,11 +62,45 @@ export async function createQueryDatasetTool(
                 (item) =>
                     SUPPORT_FORMATS.indexOf(
                         item.dist?.format?.trim().toUpperCase()
-                    ) !== -1
+                    ) !== -1 &&
+                    (!keyword ||
+                        (item.dist?.title || "")
+                            .toLowerCase()
+                            .includes(keyword.toLowerCase()))
             );
 
         if (!dists.length) {
-            return "This dataset has no supported CSV distributions to query.";
+            if (keyword) {
+                // Determine all valid titles so we can guide the agent
+                const allFormats = distributions
+                    .filter(
+                        (d) =>
+                            SUPPORT_FORMATS.indexOf(
+                                d?.format?.trim().toUpperCase()
+                            ) !== -1
+                    )
+                    .map((d) => `- ${d.title || "Untitled"}`);
+
+                return `There are no queryable CSV files matching the keyword "${keyword}". Please try calling queryDataset again without the keyword, or use an exact keyword from this list:\n${allFormats.join(
+                    "\n"
+                )}`;
+            }
+
+            const selectedDatasetId = selectedDataset?.identifier;
+            if (selectedDatasetId) {
+                const unqueryableDatasetIds =
+                    this.keyContextData.unqueryableDatasetIds || [];
+                if (unqueryableDatasetIds.indexOf(selectedDatasetId) === -1) {
+                    unqueryableDatasetIds.push(selectedDatasetId);
+                }
+                this.keyContextData.unqueryableDatasetIds = unqueryableDatasetIds;
+            }
+
+            this.keyContextData.selectedDataset = undefined;
+            this.keyContextData.datasetSchema = undefined;
+            this.keyContextData.datasetSchemaReady = false;
+
+            return "This dataset has no supported CSV distributions to query. Please select a different dataset from the current search results and continue automatically.";
         }
 
         this.queue.push(
@@ -76,6 +111,19 @@ export async function createQueryDatasetTool(
             )
         );
 
+        const MAX_DISTS = 10;
+        const distsToProcess = dists.slice(0, MAX_DISTS);
+        const truncatedWarning =
+            dists.length > MAX_DISTS
+                ? `\n\n*(Note: This dataset contains ${
+                      dists.length
+                  } queryable files. To prevent context overflow, only the columns for the first ${MAX_DISTS} files are shown above. However, here are the titles of ALL available files:\n${dists
+                      .map((d) => "- " + (d.dist?.title || "Untitled"))
+                      .join(
+                          "\n"
+                      )}\n\nPlease call queryDataset again with an exact title as the 'keyword' parameter to see its columns.)*`
+                : "";
+
         const fileSchemas: string[] = [];
         const datasetSchema: {
             distributionRef: string | number;
@@ -83,7 +131,7 @@ export async function createQueryDatasetTool(
             columns: string[];
         }[] = [];
 
-        for (const item of dists) {
+        for (const item of distsToProcess) {
             const columns = await getDistColumnNames(item.ref);
             const resolvedColumns = columns || [];
             datasetSchema.push({
@@ -109,12 +157,20 @@ export async function createQueryDatasetTool(
 
         return `I found the following files and columns in this dataset:\n\n${fileSchemas.join(
             "\n---\n"
-        )}\n\nYou can now use the executeSQLQuery tool with source(distributionRef).`;
+        )}${truncatedWarning}\n\nIMPORTANT: You must now query the data using the executeSQLQuery tool. Your SQL MUST use the source() function in the FROM clause wrapper. \nExample: SELECT * FROM source('your-distributionRef-here') LIMIT 10;`;
     }
     return {
         name: "queryDataset",
         func: queryDataset,
         description:
-            "Use this tool to inspect selected dataset distributions and discover columns before executeSQLQuery."
+            "Use this tool to inspect selected dataset distributions and discover columns before executeSQLQuery.",
+        parameters: [
+            {
+                name: "keyword",
+                type: "string",
+                description:
+                    "Optional keyword to filter distribution files by title (e.g. 'Table 28'). Use if there are too many files."
+            }
+        ]
     };
 }

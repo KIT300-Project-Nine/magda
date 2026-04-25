@@ -31,14 +31,14 @@ export function extractExtents(
         const rows = XLSX.utils.sheet_to_json(worksheet, { raw: true });
         if (rows.length) {
             const headersSet = new Set<string>();
-            for (let row of rows) {
-                for (let key of Object.keys(row as object)) {
+            for (const row of rows) {
+                for (const key of Object.keys(row as object)) {
                     headersSet.add(key);
                 }
             }
 
             const headers: string[] = [];
-            for (let header of headersSet) {
+            for (const header of headersSet) {
                 headers.push(header);
             }
 
@@ -180,7 +180,7 @@ function aggregateDates(
             const dateStr: string = row[header].toString();
             const parsedDate: Moment = moment(dateStr, dateFormats, true);
             if (parsedDate) {
-                let extendedTime = extendIncompleteTime(parsedDate.clone());
+                const extendedTime = extendIncompleteTime(parsedDate.clone());
                 if (extendedTime.isAfter(latestDate)) {
                     // Updating the current latest date
                     latestDate = extendedTime;

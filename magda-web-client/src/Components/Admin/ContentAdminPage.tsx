@@ -56,7 +56,7 @@ class ContentAdminPage extends Component<any, any> {
     }
 
     async addNew(e) {
-        let newId = this.props.generateNewId(
+        const newId = this.props.generateNewId(
             (this.props.newIdInput && this.state.newId) || ""
         );
 
@@ -162,7 +162,7 @@ class ContentAdminPage extends Component<any, any> {
                         return { id, item };
                     })}
                     itemRenderer={(wrapper: any) => {
-                        let item = wrapper.item;
+                        const item = wrapper.item;
                         return (
                             <div style={itemStyle}>
                                 <h3>

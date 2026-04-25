@@ -202,7 +202,7 @@ export const MultilineTextEditor: FunctionComponent<MultilineTextEditorPropType>
                 {limit ? (
                     <div className="word-count-row">
                         {(() => {
-                            let count = limit - wordsCount(value);
+                            const count = limit - wordsCount(value);
                             return count < 0 ? 0 : count;
                         })()}{" "}
                         words remaining

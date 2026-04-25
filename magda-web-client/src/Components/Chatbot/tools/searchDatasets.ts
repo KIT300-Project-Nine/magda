@@ -1,11 +1,11 @@
 import { searchDatasets as searchDatasetsApi } from "api-clients/SearchApis";
 import { createChatEventMessageCompleteMsg } from "../Messaging";
-import { markdownTable } from "markdown-table";
 import { config } from "../../../config";
 import { ChainInput } from "../commons";
 import type { WebLLMTool } from "../ChatWebLLM";
 
-const MAX_DESC_DISPLAY_LENGTH = 250;
+const MAX_DESC_DISPLAY_LENGTH = 120;
+const MAX_DATASET_LIST_ITEMS = 6;
 const { uiBaseUrl } = config;
 
 async function retrieveDatasets(question: string, limit: number = 5) {
@@ -18,24 +18,28 @@ async function retrieveDatasets(question: string, limit: number = 5) {
     if (!result?.dataSets?.length) {
         return notFound;
     }
-    const datasets = result.dataSets.map((item) => {
-        const desc = (item?.description?.length > MAX_DESC_DISPLAY_LENGTH
-            ? item.description.substring(0, MAX_DESC_DISPLAY_LENGTH + 1) + "..."
-            : item.description
-        ).replace(/\n|\r|<br\s*\/>/g, " ");
-        const datasetId = encodeURIComponent(
-            encodeURIComponent(item.identifier)
-        );
-        const title = `[${item.title}](${
-            uiBaseUrl === "/"
-                ? `/dataset/${datasetId}`
-                : `${uiBaseUrl}/dataset/${datasetId}`
-        }) (ID: ${item.identifier})`;
-        return [title, desc];
-    });
+    const datasets = result.dataSets
+        .slice(0, MAX_DATASET_LIST_ITEMS)
+        .map((item) => {
+            const desc = (item?.description?.length > MAX_DESC_DISPLAY_LENGTH
+                ? item.description.substring(0, MAX_DESC_DISPLAY_LENGTH + 1) +
+                  "..."
+                : item.description
+            ).replace(/\n|\r|<br\s*\/>/g, " ");
+            const datasetId = encodeURIComponent(
+                encodeURIComponent(item.identifier)
+            );
+            const title = `[${item.title}](${
+                uiBaseUrl === "/"
+                    ? `/dataset/${datasetId}`
+                    : `${uiBaseUrl}/dataset/${datasetId}`
+            }) (ID: ${item.identifier})`;
+            return `- ${title}${desc ? `: ${desc}` : ""}`;
+        });
 
-    const table = markdownTable([["Title", "Description"], ...datasets]);
-    return `I found the following datasets might be related to your inquiry:\n ${table}`;
+    return `I found the following datasets that might be related to your inquiry:\n${datasets.join(
+        "\n"
+    )}`;
 }
 
 const searchDatasets: WebLLMTool = {
@@ -53,6 +57,9 @@ const searchDatasets: WebLLMTool = {
         context.keyContextData.selectedDataset = undefined;
         context.keyContextData.datasetSchema = undefined;
         context.keyContextData.datasetSchemaReady = false;
+        context.keyContextData.queryResult = undefined;
+        context.keyContextData.chartRendered = false;
+        context.keyContextData.unqueryableDatasetIds = [];
 
         return await retrieveDatasets(queryString);
     },

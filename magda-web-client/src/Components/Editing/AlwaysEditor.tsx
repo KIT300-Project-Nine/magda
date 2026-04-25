@@ -78,7 +78,7 @@ export class AlwaysEditor<V> extends React.Component<
     }
 
     render() {
-        let { value, editor } = this.props;
+        const { value, editor } = this.props;
         if (typeof this.props.validationFieldPath !== "undefined") {
             return editor.edit(value, this.change.bind(this), undefined, {
                 ref: this.ref,

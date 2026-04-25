@@ -3,16 +3,30 @@ import type { WebLLMTool } from "./ChatWebLLM";
 
 export const MAX_TOOL_STEPS = 8;
 export const MAX_CONSECUTIVE_SAME_TOOL_CALLS = 2;
+const MAX_SERIALIZED_TOOL_RESULT_CHARS = 1800;
 
 export function serializeToolResult(value: any): string {
+    let result = "";
     if (typeof value === "undefined") {
-        return "undefined";
+        result = "undefined";
+    } else if (typeof value === "string") {
+        result = value;
+    } else {
+        try {
+            result = JSON.stringify(value);
+        } catch (_e) {
+            result = String(value);
+        }
     }
-    try {
-        return JSON.stringify(value);
-    } catch (_e) {
-        return String(value);
+
+    if (result.length <= MAX_SERIALIZED_TOOL_RESULT_CHARS) {
+        return result;
     }
+
+    return `${result.slice(
+        0,
+        MAX_SERIALIZED_TOOL_RESULT_CHARS
+    )}\n...[tool output truncated: ${result.length} chars total]`;
 }
 
 export function filterAvailableTools(
@@ -21,11 +35,21 @@ export function filterAvailableTools(
 ): WebLLMTool[] {
     const hasSearchResults = !!input.keyContextData?.searchResults?.length;
     const hasSelectedDataset = !!input.keyContextData?.selectedDataset;
-    const canQueryDataset =
-        hasSelectedDataset || !!input.dataset || !!input.distribution;
+    const hasDistributionContext =
+        !!input.distribution?.identifier ||
+        !!input.dataset?.distributions?.length;
+    const canQueryDataset = hasSelectedDataset || hasDistributionContext;
     const canExecuteSQL = !!input.keyContextData?.datasetSchemaReady;
+    const chartRendered = !!input.keyContextData?.chartRendered;
+    const shouldForceWorkflowProgress =
+        hasSearchResults &&
+        (!canExecuteSQL || !hasSelectedDataset) &&
+        !chartRendered;
 
     return tools.filter((tool) => {
+        if (tool.name === "defaultAgent" && shouldForceWorkflowProgress) {
+            return false;
+        }
         if (tool.name === "selectDataset") {
             return hasSearchResults;
         }

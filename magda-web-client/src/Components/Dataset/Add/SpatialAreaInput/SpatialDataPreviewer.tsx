@@ -5,7 +5,7 @@ import { config } from "config";
 
 interface PropsType {
     bbox?: BoundingBox;
-    animate?: Boolean;
+    animate?: boolean;
 }
 
 interface BoundsQueueItem {
