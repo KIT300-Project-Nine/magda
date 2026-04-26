@@ -410,7 +410,7 @@ class ElasticSearchQueryer(indices: Indices = DefaultIndices)(
       authorisedDatasetIds: Set[String]
     ): DataSet = {
       if (authorisedDatasetIds.contains(dataset.identifier)){
-        // User is uthorised -> return dataset normally
+        // User is authorised -> return dataset normally
         dataset.copy(years = None)
       } else {
         // User is not authorised -> return minimal placeholder
@@ -829,6 +829,8 @@ class ElasticSearchQueryer(indices: Indices = DefaultIndices)(
       applyDatasetAuthFilter: Boolean = true
   ): QueryDefinition = {
     // Toggle dataset auth filtering depending on whether this is a candidate or authorised query
+    //  - When enabled, restrict results to authorised datasets only
+    //  - When disabled, return all datasets (used for candidate query comparison)
     val datasetAuthQuery = 
       if (applyDatasetAuthFilter)
         query.authDecision.map(_.getDatasetDecisionQuery).getOrElse(MatchNoneQuery())

@@ -21,13 +21,30 @@ import scala.util.{Failure, Success}
 object AuthDirectives {
 
   /**
-    * Make auth decision based on auth decision request config.
-    * Depends on the config provided, either partial eval (conditional decision on a set of records/objects)
-    * Or unconditional decision for a single record / object will be returned.
+    * Core authorization directive used across the system.
+    * 
+    * This directive supports two modes:
+    *   1. Non-enforcing mode (enforceAuth = false):
+    *      - Used for search operations where results should be filtered rather than blocked.
+    * 
+    *   2. Enforcing mode (enforceAuth = true)
+    *      - Used for direct access to protected resources, returning 401/403 as appropriate.
+    * 
+    * This separation enables a dual-layer security model:
+    *   - Search remains functional for all users
+    *   - Restricted resources are protected when accessed directly
+    * 
     * @param authApiClient
     * @param config
-    * @param enforceAuth // If true, will return 401 Unauthorized if the decision is false or cannot be made.
-    *                    // If false, (default), just provides the decision (useful for filtering in search)
+    * 
+    * 
+    * @param enforceAuth  Controls whether the authorization is enforced:
+    *                    // - False (default): Non-enforcing mode used for search operations.
+    *                    //   Requests are allowed to proceed and results are filtered instead of returning 401.
+    *                    // - True: Enforcing mode used for direct resource access.
+    *                    // Returns:
+    *                    //   - 401 if the user is not authenticated
+    *                    //   - 403 if the user is authenticated but lacks permission        
     * @return // Directive1[AuthDecision]
     */
   def withAuthDecision(
@@ -44,6 +61,8 @@ object AuthDirectives {
             provide(authDecision)
           } else if (authDecision.hasResidualRules) {
             log.warning(
+              // Partial evaluation means the authorization engine could not make a definitive allow/deny decision.
+              // For security reasons, this is treated as unauthorised to prevent accidental exposure of restricted data.
               "Partial evaluation only for operation `{}`. Treating as unauthorized.",
               config.operationUri
             )
@@ -252,7 +271,12 @@ object AuthDirectives {
       )
   }
 
-  // New: Can use this 401 unauthorized response elsewhere.
+  /**
+    * Reusable helper to return a standardized 401 Unauthorized response.
+    * Ensures consistent error structure for frontend handling.
+    *
+    * @param message
+    */
   def rejectWithUnauthorized(message: String = "You are not authorized to access this resource. Please login if you have access."): Directive0 = {
   val errorBody = JsObject(
     "error"        -> JsString("unauthorized"),   // Consistent error type for frontend
@@ -263,7 +287,7 @@ object AuthDirectives {
  }
 
   /**
-   * New: Directive for single-record / private resource access (e.g. GET /v0/registry/records/{id} or dataset detail page)
+   * Directive for single-record / private resource access (e.g. GET /v0/registry/records/{id} or dataset detail page)
    * 
    * Behaviour:
       - If a user is not logged in (anonymous), returns 401 with a friendly "please log in" message.

@@ -21,7 +21,6 @@ import au.csiro.data61.magda.directives.AuthDirectives.{
   requireUserId,
 
   requirePermissionForPrivateResource, // Added import
-  withAuthDecision
 }
 import au.csiro.data61.magda.directives.TenantDirectives.requiresSpecifiedTenantId
 import au.csiro.data61.magda.model.Auth.recordToContextData
@@ -714,8 +713,9 @@ class RecordsService(
           withAuthDecision(
             authClient,
             AuthDecisionReqConfig("object/record/update")
-              // Non-enforcing mode (enforceAuth = false), used for bulk/list-style operations
-              // This allows filtering of results intstead of returning 401 code, consistent with search behaviour
+              // Use non-enforcing authorization for bulk/list-style operations. The auth decision is passed into persistence so inaccessible
+              // records can be filtered or handled per-record instead of failing this entire request with 401. This matches search behaviour,
+              // where authorization filters results rather than blocking the request.
           ) { authDecision => 
             onCompleteBlockingTask {
               val result = DB localTx { implicit session =>
@@ -843,8 +843,9 @@ class RecordsService(
               withAuthDecision(
                 authClient,
                 AuthDecisionReqConfig("object/record/update")
-                  // Non-enforcing mode (enforceAuth = false), used for bulk/list-style operations
-                  // This allows filtering of results intstead of returning 401 code, consistent with search behaviour
+                // Use non-enforcing authorization for bulk/list-style operations. The auth decision is passed into persistence so inaccessible
+                // records can be filtered or handled per-record instead of failing this entire request with 401. This matches search behaviour,
+                // where authorization filters results rather than blocking the request.
               ) { authDecision =>
                 onCompleteBlockingTask {
                   val result = DB localTx { implicit session =>
@@ -968,8 +969,9 @@ class RecordsService(
             withAuthDecision(
               authClient,
               AuthDecisionReqConfig("object/record/update")
-                // Non-enforcing mode (enforceAuth = false), used for bulk/list-style operations
-                // This allows filtering of results intstead of returning 401 code, consistent with search behaviour
+                // Use non-enforcing authorization for bulk/list-style operations. The auth decision is passed into persistence so inaccessible 
+                // records can be filtered or handled per-record instead of failing this entire request with 401. This matches search behaviour,
+                // where authorization filters results rather than blocking the request.
             ) { authDecision =>
               onCompleteBlockingTask {
                 val result = DB localTx { implicit session =>

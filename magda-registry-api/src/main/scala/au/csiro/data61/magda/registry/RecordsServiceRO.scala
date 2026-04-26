@@ -921,19 +921,13 @@ class RecordsServiceRO(
       )
     )
   )
-  @ApiResponses(
-    Array(
-      new ApiResponse(
-        code = 404,
-        message = "No record exists with that ID.",
-        response = classOf[ApiError]
-      )
-    )
-  )
-
   def getById: Route = get {
     path(Segment) { id =>
       requiresTenantId { tenantId =>
+        // Enforce access control for direct record access
+        // Anonymous users attempting to access a restricted/private record receive 401,
+        // while authenticated users without permission receive 403.
+        // Search/list routes remain non-blocking and are filtered separately.
         requirePermissionForPrivateResource(
           authApiClient,
           "object/record/read",
@@ -1061,8 +1055,6 @@ class RecordsServiceRO(
         }
       }
     }
-  }
-
   /**
     * @apiGroup Registry Record Service
     * @api {get} /v0/registry/records/inFull/{id} Get a record with all attached aspects data by the record ID
@@ -1124,7 +1116,6 @@ class RecordsServiceRO(
       )
     )
   )
-
   def getByIdInFull: Route = get {
     path("inFull" / Segment) { id =>
       requiresTenantId { tenantId =>
