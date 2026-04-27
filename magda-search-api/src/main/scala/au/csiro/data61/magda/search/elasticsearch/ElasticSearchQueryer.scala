@@ -411,7 +411,11 @@ class ElasticSearchQueryer(indices: Indices = DefaultIndices)(
     ): DataSet = {
       if (authorisedDatasetIds.contains(dataset.identifier)){
         // User is authorised -> return dataset normally
-        dataset.copy(years = None)
+        // Add 'Restricted' flag so frontend can detect and display unauthorized datasets without blocking search results
+        dataset.copy(
+          years = None,
+          restricted = Some(false)
+        )
       } else {
         // User is not authorised -> return minimal placeholder
         dataset.copy(
@@ -878,11 +882,11 @@ class ElasticSearchQueryer(indices: Indices = DefaultIndices)(
     ).getOrElse(MatchAllQuery()) :: filterClauses
 
     val datasetFilterQuery =
-      if (datasetFilterClauses.isEmpty) boolQuery().must(datasetFilterClauses)
+      if (datasetFilterClauses.nonEmpty) boolQuery().must(datasetFilterClauses)
       else matchAllQuery()
 
     val distributionFilterQuery =
-      if (distributionFilterClauses.isEmpty)
+      if (distributionFilterClauses.nonEmpty)
         boolQuery().must(distributionFilterClauses)
       else matchAllQuery()
 
