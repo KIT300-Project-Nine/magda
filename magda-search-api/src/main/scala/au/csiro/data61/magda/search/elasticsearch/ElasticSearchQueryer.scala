@@ -478,7 +478,28 @@ class ElasticSearchQueryer(indices: Indices = DefaultIndices)(
       hitCountRelation = Some(response.hits.total.relation),
       
       // Apply per-dataset masking before returning results to the frontend
-      dataSets = response.to[DataSet].map(dataset => maskDatasetIfRestricted(dataset, authorisedDatasetIds)).toList,
+      //dataSets = response.to[DataSet].map(dataset => maskDatasetIfRestricted(dataset, authorisedDatasetIds)).toList,
+
+        //* TEMP TEST: force one dataset as restricted for demo.*//
+            //// Remove when real auth (`authorisedDatasetIds`) is used.////
+        dataSets = response.to[DataSet].map { dataset =>
+          if (dataset.identifier == "ds-sa-ded7c11d-2cd3-4bff-8d6f-dd850250a486") {
+          dataset.copy(
+          title = None,
+          description = None,
+          publisher = None,
+          distributions = Nil,
+          restricted = Some(true),
+          years = None
+        )
+      } else {
+        dataset.copy(
+          years = None,
+          restricted = Some(false)
+        )
+      }
+    }.toList,
+
       temporal = Some(
         PeriodOfTime(
           start = getDateAggResult(
