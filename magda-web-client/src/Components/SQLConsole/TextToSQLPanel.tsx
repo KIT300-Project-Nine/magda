@@ -11,15 +11,13 @@ import AgentChain from "../Chatbot/AgentChain";
 import { InitProgressReport } from "@mlc-ai/web-llm";
 import { ParsedDataset, ParsedDistribution } from "helpers/record";
 import { useLocation, useHistory } from "react-router-dom";
-import { runQuery } from "../../libs/sqlUtils";
+import { runQuery, distribution2ResourceItem } from "../../libs/sqlUtils";
 import { SystemMessage, HumanMessage } from "@langchain/core/messages";
 import Input from "rsuite/Input";
 import Button from "rsuite/Button";
 import Loader from "rsuite/Loader";
 import reportError from "helpers/reportError";
 import "./TextToSQLPanel.scss";
-
-const SUPPORT_FORMATS = ["CSV-GEO-AU", "CSV"];
 
 async function buildSchema(
     distributions: Array<{ idx: number; title: string }>
@@ -118,11 +116,7 @@ const TextToSQLPanel: FunctionComponent<Props> = ({
                   ]
                 : dataset?.distributions?.length
                 ? dataset.distributions
-                      .filter((d) =>
-                          SUPPORT_FORMATS.includes(
-                              (d.format || "").trim().toUpperCase()
-                          )
-                      )
+                      .filter((d) => !!distribution2ResourceItem(d))
                       .map((d, idx) => ({
                           idx,
                           title: d.title || `File ${idx}`
