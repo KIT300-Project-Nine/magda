@@ -249,7 +249,9 @@ class AgentChain {
         return RunnableLambda.from(async (input: ChainInput) => {
             const { queue } = input;
             try {
-                console.log("[Magda][chain] STEP START");
+                if (this.debug) {
+                    console.log("[Magda][chain] STEP START");
+                }
                 const maxSteps = MAX_TOOL_STEPS;
 
                 //start with initial question
@@ -263,10 +265,12 @@ class AgentChain {
                     const tools = await createTools(input);
                     const availableTools = filterAvailableTools(tools, input);
 
-                    console.log(
-                        "TOOLS AVAILABLE:",
-                        availableTools.map((t) => t.name)
-                    );
+                    if (this.debug) {
+                        console.log(
+                            "TOOLS AVAILABLE:",
+                            availableTools.map((t) => t.name)
+                        );
+                    }
 
                     if (!availableTools.length) {
                         throw new Error(
@@ -274,11 +278,13 @@ class AgentChain {
                         );
                     }
 
-                    console.log("[Magda][chain] step:", step);
-                    console.log(
-                        "[Magda][chain] currentMessages:",
-                        currentMessages
-                    );
+                    if (this.debug) {
+                        console.log("[Magda][chain] step:", step);
+                        console.log(
+                            "[Magda][chain] currentMessages:",
+                            currentMessages
+                        );
+                    }
 
                     const result = await this.model.invokeTool(
                         currentMessages,

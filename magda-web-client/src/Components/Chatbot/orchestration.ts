@@ -43,7 +43,7 @@ export function filterAvailableTools(
     const canExecuteSQL = !!input.keyContextData?.datasetSchemaReady;
     const chartRendered = !!input.keyContextData?.chartRendered;
     const shouldForceWorkflowProgress =
-        (hasSelectedDataset || hasDistributionContext) &&
+        (hasSelectedDataset || (hasDistributionContext && !hasSearchResults)) &&
         !hasQueryResult &&
         !chartRendered;
 

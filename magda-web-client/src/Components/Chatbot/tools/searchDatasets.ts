@@ -1,11 +1,11 @@
 import { searchDatasets as searchDatasetsApi } from "api-clients/SearchApis";
 import { createChatEventMessageCompleteMsg } from "../Messaging";
+import { markdownTable } from "markdown-table";
 import { config } from "../../../config";
 import { ChainInput } from "../commons";
-import type { WebLLMTool } from "../ChatWebLLM";
+import { WebLLMTool } from "../ChatWebLLM";
 
-const MAX_DESC_DISPLAY_LENGTH = 120;
-const MAX_DATASET_LIST_ITEMS = 6;
+const MAX_DESC_DISPLAY_LENGTH = 250;
 const { uiBaseUrl } = config;
 
 async function retrieveDatasets(question: string, limit: number = 5) {
@@ -18,28 +18,24 @@ async function retrieveDatasets(question: string, limit: number = 5) {
     if (!result?.dataSets?.length) {
         return notFound;
     }
-    const datasets = result.dataSets
-        .slice(0, MAX_DATASET_LIST_ITEMS)
-        .map((item) => {
-            const desc = (item?.description?.length > MAX_DESC_DISPLAY_LENGTH
-                ? item.description.substring(0, MAX_DESC_DISPLAY_LENGTH + 1) +
-                  "..."
-                : item.description
-            ).replace(/\n|\r|<br\s*\/>/g, " ");
-            const datasetId = encodeURIComponent(
-                encodeURIComponent(item.identifier)
-            );
-            const title = `[${item.title}](${
-                uiBaseUrl === "/"
-                    ? `/dataset/${datasetId}`
-                    : `${uiBaseUrl}/dataset/${datasetId}`
-            }) (ID: ${item.identifier})`;
-            return `- ${title}${desc ? `: ${desc}` : ""}`;
-        });
+    const datasets = result.dataSets.map((item) => {
+        const desc = (item?.description?.length > MAX_DESC_DISPLAY_LENGTH
+            ? item.description.substring(0, MAX_DESC_DISPLAY_LENGTH + 1) + "..."
+            : item.description
+        ).replace(/\n|\r|<br\s*\/>/g, " ");
+        const datasetId = encodeURIComponent(
+            encodeURIComponent(item.identifier)
+        );
+        const title = `[${item.title}](${
+            uiBaseUrl === "/"
+                ? `/dataset/${datasetId}`
+                : `${uiBaseUrl}/dataset/${datasetId}`
+        })`;
+        return [title, desc];
+    });
 
-    return `I found the following datasets that might be related to your inquiry:\n${datasets.join(
-        "\n"
-    )}`;
+    const table = markdownTable([["Title", "Description"], ...datasets]);
+    return `I found the following datasets might be related to your inquiry:\n ${table}`;
 }
 
 const searchDatasets: WebLLMTool = {
@@ -65,8 +61,7 @@ const searchDatasets: WebLLMTool = {
     },
     description:
         "This tool can be used to search datasets relevant to the user's inquiry and present the dataset list to user as the answer. You must use this call when there is no better tool to use." +
-        "You should generate one or more keywords or a sentence on the user inquiry and supply as the compulsory `queryString` parameter." +
-        "If a dataset looks relevant, you should use its ID with the 'queryDataset' tool to explore its files",
+        "You should generate one or more keywords or a sentence on the user inquiry and supply as the compulsory `queryString` parameter.",
     parameters: [
         {
             name: "queryString",
