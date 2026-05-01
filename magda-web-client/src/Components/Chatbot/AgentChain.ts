@@ -256,6 +256,8 @@ class AgentChain {
                 const currentMessages: any[] = [...this.agentMessages];
                 let previousCallSignature = "";
                 let repeatedCallCount = 0;
+                let lastToolName = "";
+                let lastToolResult: any = null;
 
                 for (let step = 0; step < maxSteps; step++) {
                     const tools = await createTools(input);
@@ -308,14 +310,21 @@ class AgentChain {
                             continue;
                         }
 
+                        // If the last tool was searchDatasets, return the full search results
+                        // instead of just the LLM-generated response
+                        const outputToReturn =
+                            lastToolName === "searchDatasets" && lastToolResult
+                                ? lastToolResult
+                                : result.value;
+
                         this.agentMessages.push({
                             role: "assistant",
-                            content: result.value
+                            content: outputToReturn
                         });
 
                         this.agentMessages = this.agentMessages.slice(-10);
 
-                        return result.value;
+                        return outputToReturn;
                     }
 
                     const currentCallSignature = `${
@@ -334,6 +343,10 @@ class AgentChain {
                         repeatedCallCount = 0;
                         previousCallSignature = currentCallSignature;
                     }
+
+                    // Track this tool for potential use in conversational response
+                    lastToolName = result.name;
+                    lastToolResult = result.value;
 
                     currentMessages.push({
                         role: "user",
