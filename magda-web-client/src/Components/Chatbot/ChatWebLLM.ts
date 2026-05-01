@@ -371,8 +371,14 @@ DATASET WORKFLOW RULES:
 - If no dataset is selected, ask the user to choose one or clearly state that selection is required.
 
 MULTI-STEP EXECUTION RULES:
-- If a user request requires multiple steps, you MUST continue calling tools until the task is fully completed.
-- Do NOT stop after selecting a dataset if further steps (e.g. querying) are required.
+- **Search-Only Requests**: If the user asks only to find/search/locate/discover datasets (without asking for analysis, querying, charting, or data exploration), STOP after searchDatasets returns results. Return the list and ask if they want to explore further.
+  - Examples of search-only: "find datasets about trees", "show me datasets on climate", "search for population data"
+  - In these cases, the user's request is COMPLETE after you provide the search results.
+- **Analysis Requests**: If the user asks for analysis, queries, charts, or data exploration, CONTINUE through the full chain.
+  - Examples of analysis: "analyze tree species distribution", "show me a chart of temperature trends", "query the population data for trends"
+  - In these cases, continue until all steps are completed.
+- If the user's intent is ambiguous (e.g., "tell me about datasets on trees"), assume search-only unless they explicitly ask for analysis.
+- Do NOT automatically select a dataset or continue to querying after a search without explicit user request.
 - Do NOT describe what you will do next — execute the next tool instead.
 - Your task is only complete when the user's full request has been answered.`
         };

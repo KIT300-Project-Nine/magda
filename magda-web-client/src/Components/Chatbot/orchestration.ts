@@ -38,12 +38,13 @@ export function filterAvailableTools(
     const hasDistributionContext =
         !!input.distribution?.identifier ||
         !!input.dataset?.distributions?.length;
+    const hasQueryResult = !!input.keyContextData?.queryResult?.length;
     const canQueryDataset = hasSelectedDataset || hasDistributionContext;
     const canExecuteSQL = !!input.keyContextData?.datasetSchemaReady;
     const chartRendered = !!input.keyContextData?.chartRendered;
     const shouldForceWorkflowProgress =
-        hasSearchResults &&
-        (!canExecuteSQL || !hasSelectedDataset) &&
+        (hasSelectedDataset || hasDistributionContext) &&
+        !hasQueryResult &&
         !chartRendered;
 
     return tools.filter((tool) => {
