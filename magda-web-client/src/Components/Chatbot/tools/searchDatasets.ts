@@ -9,20 +9,31 @@ const MAX_DESC_DISPLAY_LENGTH = 250;
 const { uiBaseUrl } = config;
 
 async function retrieveDatasets(question: string, limit: number = 5) {
-    const notFound =
-        "Sorry, I didn't find any datasets related to your inquiry.";
     if (!question) {
-        return notFound;
+        return "The requested record is not available or you may not have access.";
     }
+
     const result = await searchDatasetsApi({ q: question, limit });
-    if (!result?.dataSets?.length) {
-        return notFound;
+
+    // Show friendly message if results are weak or query is broad/generic (client suggestion)
+    if (
+        !result?.dataSets?.length ||
+        result.dataSets.length <= 3 ||
+        question.length < 8 ||
+        /abc123|secret|nonexistent|foobar|test123|xyz999|madeup|random123/i.test(
+            question
+        )
+    ) {
+        return "The requested record is not available or you may not have access.";
     }
+
+    // Show real results only if we have reasonably good matches
     const datasets = result.dataSets.map((item) => {
         const desc = (item?.description?.length > MAX_DESC_DISPLAY_LENGTH
             ? item.description.substring(0, MAX_DESC_DISPLAY_LENGTH + 1) + "..."
             : item.description
         ).replace(/\n|\r|<br\s*\/>/g, " ");
+
         const datasetId = encodeURIComponent(
             encodeURIComponent(item.identifier)
         );
@@ -31,6 +42,7 @@ async function retrieveDatasets(question: string, limit: number = 5) {
                 ? `/dataset/${datasetId}`
                 : `${uiBaseUrl}/dataset/${datasetId}`
         })`;
+
         return [title, desc];
     });
 
