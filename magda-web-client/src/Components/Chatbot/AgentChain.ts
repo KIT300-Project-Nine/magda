@@ -237,18 +237,45 @@ class AgentChain {
                 if (this.debug) {
                     console.log("available tools: ", tools);
                 }
+                /// Invoke the model with the user's question and available tools
                 const result = await this.model.invokeTool(
                     input.question,
                     tools,
                     input
                 );
                 const value = result?.value;
+                // If the result is empty/undefined, return early (no output)
                 if (typeof value === "undefined" || value === null) {
                     return;
                 }
                 return `${value}`;
             } catch (e) {
-                queue.push(createChatEventMessageErrorMsg(e as Error));
+                const rawError = e as Error;
+
+                // Normalise the error message to lowercase for consistent matching
+                const msg = String(rawError.message || rawError).toLowerCase();
+
+                // Convert technical backend errors into friendly messages for the user.
+                // This handles common cases like missing records (404), authentication issues (401),
+                // permission errors (403), etc.
+                const safeMessage =
+                    msg.includes("404") ||
+                    msg.includes("not found") ||
+                    msg.includes("401") ||
+                    msg.includes("unauthorised") ||
+                    msg.includes("unauthorized") ||
+                    msg.includes("403") ||
+                    msg.includes("forbidden") ||
+                    msg.includes("permission") ||
+                    msg.includes("access denied")
+                        ? "The requested record is not available or you may not have access."
+                        : "Something went wrong while retrieving the dataset. Please try again.";
+
+                // Push a properly formatted error event to the chat queue so the UI can display
+                // the friendly message to the user
+                queue.push(
+                    createChatEventMessageErrorMsg(new Error(safeMessage))
+                );
                 return;
             }
         });
