@@ -2,6 +2,7 @@ import React, { FunctionComponent, useCallback } from "react";
 import { useAsync } from "react-async-hook";
 import reportError from "helpers/reportError";
 import GeoJsonViewer from "./GeoJsonViewer";
+import GeospatialMapViewer from "./GeospatialMapViewer";
 import MarkdownMermaid from "./MarkdownMermaid";
 import EchartsViewer from "./EchartsViewer";
 import SQLViewer from "./SQLViewer";
@@ -157,6 +158,10 @@ async function loadMarkdownPreview() {
                 const match = /language-(\w+)/.exec(className || "");
                 if (match?.[1]?.toLowerCase() === "geojson") {
                     return <GeoJsonViewer geoJson={children} />;
+                } else if (
+                    match?.[1]?.toLowerCase() === "geospatialmap".toLowerCase()
+                ) {
+                    return <GeospatialMapViewer mapData={children} />;
                 } else if (
                     match?.[1]?.toLowerCase() === "mermaid".toLowerCase()
                 ) {
