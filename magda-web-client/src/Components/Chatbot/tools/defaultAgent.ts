@@ -27,13 +27,15 @@ function createToolList(location: Location): string {
             return (
                 "- Search dataset tool: search and return relevant datasets based on the user inquiry.\n" +
                 "- Tabular data analysis tool: When one of tabular data file of the current dataset is relevant to the user inquiry. " +
-                "This tool will be used to answer the user inquiry with tabular data analysis result."
+                "This tool will be used to answer the user inquiry with tabular data analysis result.\n" +
+                "- Geospatial rendering tool: When query results contain spatial coordinates or GeoJSON, use this tool to render an interactive map in chat."
             );
         case "DISTRIBUTION_PAGE":
             return (
                 "- Search dataset tool: search and return relevant datasets based on the user inquiry.\n" +
                 "- Tabular data analysis tool: When one of tabular data file of the current dataset distribution is relevant to the user inquiry. " +
-                "This tool will be used to answer the user inquiry with tabular data analysis result."
+                "This tool will be used to answer the user inquiry with tabular data analysis result.\n" +
+                "- Geospatial rendering tool: When query results contain spatial coordinates or GeoJSON, use this tool to render an interactive map in chat."
             );
         default:
             return "- Search dataset tool: search and return relevant datasets based on the user inquiry.";

@@ -6,6 +6,7 @@ import { createQueryDatasetTool } from "./queryDataset";
 import type { WebLLMTool } from "../ChatWebLLM";
 import { createPresentPreviousQueryResultAsChartTool } from "./presentPreviousQueryResultAsChart";
 import executeSQLQuery from "./executeSQLQuery";
+import renderGeospatialMap from "./renderGeospatialMap";
 
 async function createTools(input: ChainInput): Promise<WebLLMTool[]> {
     const tools: (WebLLMTool | null)[] = [
@@ -16,6 +17,7 @@ async function createTools(input: ChainInput): Promise<WebLLMTool[]> {
     const queryTool = await createQueryDatasetTool(input);
     if (queryTool) tools.push(queryTool);
     tools.push(executeSQLQuery);
+    tools.push(renderGeospatialMap);
 
     const chartTool = await createPresentPreviousQueryResultAsChartTool(input);
     if (chartTool) tools.push(chartTool);
