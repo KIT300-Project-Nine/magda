@@ -749,10 +749,15 @@ class ElasticSearchQueryer(indices: Indices = DefaultIndices)(
       query: Query,
       strategy: SearchStrategy
   ): QueryDefinition = {
+// Security note:
+// These filters include OPA/Auth API decisions and must be applied before
+// Elasticsearch/Hybrid search returns results. If auth data is missing,
+// MatchNoneQuery is used above so the search fails closed.
+val datasetAuthQuery =
+  query.authDecision.map(_.getDatasetDecisionQuery).getOrElse(MatchNoneQuery())
 
-    val datasetAuthQuery = query.authDecision.get.getDatasetDecisionQuery
-    val distributionAuthQuery =
-      query.authDecision.get.getDistributionDecisionQuery
+val distributionAuthQuery =
+  query.authDecision.map(_.getDistributionDecisionQuery).getOrElse(MatchNoneQuery())
 
     val datasetTenantIdQuery = query.tenantId
       .map(
@@ -790,6 +795,12 @@ class ElasticSearchQueryer(indices: Indices = DefaultIndices)(
       query.publishingState,
       isDistributionQuery = true
     ).getOrElse(MatchAllQuery()) :: filterClauses
+
+    // Security note:
+    // `datasetAuthQuery` and `distributionAuthQuery` are derived from the OPA/Auth API
+    // decision passed through SearchApi.scala. These auth filters must be included
+    // before Elasticsearch/Hybrid search returns results, otherwise restricted
+    // datasets could be scored or exposed before access control is applied.
 
     // kNN `filter` must narrow the ANN candidate set to the same constraints as
     // `datasetFilterClauses` / `distributionFilterClauses` (tenant, publishing state,
