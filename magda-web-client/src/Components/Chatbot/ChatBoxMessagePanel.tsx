@@ -242,7 +242,14 @@ const ChatBoxMessagePanel: FunctionComponent<PropsType> = (props) => {
                         ? "The requested record is not available or you may not have access."
                         : "Something went wrong while retrieving the dataset. Please try again.";
 
-                throw new Error(safeMessage);
+                //throw new Error(safeMessage);
+                addMessage(messageQueueRef, {
+                    type: "bot",
+                    content: safeMessage
+                });
+
+                setDataReloadToken(Math.random().toString());
+                return;
             }
 
             if (eventMessage.event === EVENT_TYPE_CLOSE) {
