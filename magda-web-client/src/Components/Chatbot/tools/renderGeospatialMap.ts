@@ -126,21 +126,103 @@ function rowsToFeatureCollection(
 }
 
 function parseGeoJsonInput(rawGeoJsonData: string): GeoJsonFeatureCollection {
-    let parsed: any;
+    // Try to parse as JSON first. Handle common wrapper cases where the
+    // input may be a JSON-stringified string (e.g., "| col | ...") or an
+    // object like { value: "...table..." } coming from agent tooling.
     try {
-        parsed = JSON.parse(rawGeoJsonData);
-    } catch (e) {
+        const parsed = JSON.parse(rawGeoJsonData);
+
+        // If parsing produced a plain string, treat it as raw table/text and try table parsing.
+        if (typeof parsed === "string") {
+            const records = parseMarkdownTableToRecords(parsed);
+            if (records && records.length) {
+                return rowsToFeatureCollection(records);
+            }
+            throw new Error("GeoJSON must be a FeatureCollection object.");
+        }
+
+        // Some tools may wrap the payload: { value: '...'} or {name, value}
+        if (parsed && typeof parsed === "object") {
+            if (
+                parsed.type === "FeatureCollection" &&
+                Array.isArray(parsed.features)
+            ) {
+                return parsed as GeoJsonFeatureCollection;
+            }
+
+            if (
+                typeof parsed.value === "string" &&
+                parsed.value.trim().length
+            ) {
+                const records = parseMarkdownTableToRecords(parsed.value);
+                if (records && records.length) {
+                    return rowsToFeatureCollection(records);
+                }
+            }
+        }
+
+        throw new Error("GeoJSON must be a FeatureCollection object.");
+    } catch (jsonErr) {
+        // If JSON parsing failed, attempt to parse common ASCII/markdown table outputs
+        const records = parseMarkdownTableToRecords(rawGeoJsonData);
+        if (records && records.length) {
+            return rowsToFeatureCollection(records);
+        }
+
         throw new Error("Invalid GeoJSON JSON string.");
     }
+}
 
-    if (
-        parsed?.type !== "FeatureCollection" ||
-        !Array.isArray(parsed?.features)
-    ) {
-        throw new Error("GeoJSON must be a FeatureCollection object.");
+function parseMarkdownTableToRecords(raw: string): Record<string, any>[] {
+    const lines = raw
+        .split(/\r?\n/) // split into lines
+        .map((l) => l.trim())
+        .filter((l) => l.length);
+
+    // Look for a markdown-style table header (lines containing |)
+    const tableLines = lines.filter((l) => l.includes("|"));
+    if (tableLines.length < 2) {
+        return [];
     }
 
-    return parsed as GeoJsonFeatureCollection;
+    // Find the header line and separator (----)
+    let headerIndex = -1;
+    for (let i = 0; i < tableLines.length - 1; i++) {
+        const next = tableLines[i + 1];
+        if (/^\s*\|?\s*:?-{2,}/.test(next) || /^\s*-{3,}\s*$/.test(next)) {
+            headerIndex = i;
+            break;
+        }
+    }
+
+    if (headerIndex === -1) {
+        // fallback: assume first table-like line is header
+        headerIndex = 0;
+    }
+
+    const headerLine = tableLines[headerIndex];
+    const headers = headerLine
+        .split("|")
+        .map((h) => h.trim())
+        .filter((h) => h.length);
+
+    const dataLines = tableLines.slice(headerIndex + 2);
+    if (dataLines.length === 0) {
+        return [];
+    }
+
+    const records: Record<string, any>[] = [];
+    for (const line of dataLines) {
+        const cols = line.split("|").map((c) => c.trim());
+        if (cols.length < headers.length) continue;
+        const rec: Record<string, any> = {};
+        for (let i = 0; i < headers.length; i++) {
+            rec[headers[i]] = cols[i + 1] !== undefined ? cols[i + 1] : cols[i];
+        }
+        records.push(rec);
+    }
+
+    return records;
 }
 
 const renderGeospatialMap: WebLLMTool = {
@@ -152,18 +234,56 @@ const renderGeospatialMap: WebLLMTool = {
         latitudeColumn?: string,
         longitudeColumn?: string
     ) {
-        const title = mapTitle?.trim()?.length
-            ? mapTitle.trim()
+        const looksLikeSpatialPayload = (value: string): boolean => {
+            const v = value.trim();
+            return (
+                v.startsWith("{") ||
+                v.startsWith("[") ||
+                v.includes("\n|") ||
+                v.startsWith("|")
+            );
+        };
+
+        // Be defensive against argument-order mistakes from model tool-calling.
+        let normalizedTitle = mapTitle?.trim() || "";
+        let normalizedGeoJsonData = geoJsonData;
+        if (
+            (!normalizedGeoJsonData || !normalizedGeoJsonData.trim()) &&
+            normalizedTitle &&
+            looksLikeSpatialPayload(normalizedTitle)
+        ) {
+            normalizedGeoJsonData = normalizedTitle;
+            normalizedTitle = "";
+        }
+
+        const title = normalizedTitle.length
+            ? normalizedTitle
             : "Spatial query result";
 
         let featureCollection: GeoJsonFeatureCollection;
         try {
-            if (geoJsonData && geoJsonData.trim().length) {
-                featureCollection = parseGeoJsonInput(geoJsonData);
+            if (normalizedGeoJsonData && normalizedGeoJsonData.trim().length) {
+                try {
+                    featureCollection = parseGeoJsonInput(
+                        normalizedGeoJsonData
+                    );
+                } catch (parseError) {
+                    // If user/model supplied malformed GeoJSON-like text, fallback to
+                    // latest query rows when available to avoid dead-end loops.
+                    const records = this.keyContextData?.queryResult;
+                    if (!Array.isArray(records) || !records.length) {
+                        throw parseError;
+                    }
+                    featureCollection = rowsToFeatureCollection(
+                        records,
+                        latitudeColumn,
+                        longitudeColumn
+                    );
+                }
             } else {
                 const records = this.keyContextData?.queryResult;
                 if (!Array.isArray(records)) {
-                    return "Failed to render map: no previous query result is available.";
+                    return "Failed to render map: no previous query result is available. Run executeSQLQuery first, then call renderGeospatialMap.";
                 }
                 featureCollection = rowsToFeatureCollection(
                     records,
@@ -189,7 +309,7 @@ const renderGeospatialMap: WebLLMTool = {
         return "Map has been generated and displayed successfully.";
     },
     description:
-        "Render an interactive map from a GeoJSON FeatureCollection or from the previous SQL query result using latitude and longitude columns.",
+        "Render an interactive map from a GeoJSON FeatureCollection JSON string. If you do not have a GeoJSON string, you MUST first use the 'queryDataset' and 'executeSQLQuery' tools to retrieve data with latitude and longitude columns, and THEN call this tool without the 'geoJsonData' parameter.",
     parameters: [
         {
             name: "mapTitle",
