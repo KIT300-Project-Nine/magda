@@ -188,11 +188,11 @@ helmet:
   xPermittedCrossDomainPolicies: false
   contentSecurityPolicy:
     directives:
-      defaultSrc: null
-      fontSrc: null
-      imgSrc: null
-      scriptSrcAttr: null
-      styleSrc: null
+      defaultSrc: ["'self'"]
+      fontSrc: ["'self'", "data:"]
+      imgSrc: ["'self'", "data:"]
+      scriptSrcAttr: ["'none'"]
+      styleSrc: ["'self'", "'unsafe-inline'"]
       scriptSrc:
       - "'self'"
       workerSrc:
