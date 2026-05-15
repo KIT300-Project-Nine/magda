@@ -30,7 +30,7 @@ function createInput(): ChainInput {
                     {
                         identifier: "dist-1",
                         title: "Distribution One",
-                        format: "CSV"
+                        format: "TSV"
                     }
                 ]
             },
@@ -62,5 +62,47 @@ describe("queryDataset tool", () => {
         const tool = await createQueryDatasetTool(input);
         const result = await tool!.func.call(input);
         expect(result).toContain("No dataset is currently selected");
+    });
+
+    it("supports newly exposed formats such as xlsx", async () => {
+        const input = createInput();
+        input.keyContextData.selectedDataset = {
+            identifier: "dataset-2",
+            title: "Dataset Two",
+            distributions: [
+                {
+                    identifier: "dist-2",
+                    title: "Distribution Two",
+                    format: "XLSX"
+                }
+            ]
+        };
+        const tool = await createQueryDatasetTool(input);
+        const result = await tool!.func.call(input);
+
+        expect(result).toContain("distributionRef");
+        expect(input.keyContextData.datasetSchema?.[0]?.distributionRef).toBe(
+            "dist-2"
+        );
+    });
+
+    it("rejects datasets with unsupported formats", async () => {
+        const input = createInput();
+        input.keyContextData.selectedDataset = {
+            identifier: "dataset-3",
+            title: "Dataset Three",
+            distributions: [
+                {
+                    identifier: "dist-3",
+                    title: "Distribution Three",
+                    format: "PDF"
+                }
+            ]
+        };
+        const tool = await createQueryDatasetTool(input);
+        const result = await tool!.func.call(input);
+
+        expect(result).toContain("no supported distributions");
+        expect(input.keyContextData.datasetSchemaReady).toBe(false);
     });
 });

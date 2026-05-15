@@ -13,6 +13,7 @@ import {
     createChatEventMessage
 } from "../Messaging";
 import type { WebLLMTool } from "../ChatWebLLM";
+import { getSupportedFormatLabels } from "./supportedFormats";
 
 const systemPromptTpl = SystemMessagePromptTemplate.fromTemplate(
     `You are a friendly AI agent named "{appName}". \n` +
@@ -26,14 +27,20 @@ function createToolList(location: Location): string {
         case "DATASET_PAGE":
             return (
                 "- Search dataset tool: search and return relevant datasets based on the user inquiry.\n" +
-                "- Tabular data analysis tool: When one of tabular data file of the current dataset is relevant to the user inquiry. " +
-                "This tool will be used to answer the user inquiry with tabular data analysis result."
+                "- Tabular data analysis tool: When one of the current dataset distributions is relevant to the user inquiry. " +
+                "This tool will be used to answer the user inquiry with tabular data analysis result.\n" +
+                `- Supported chatbot formats: ${getSupportedFormatLabels().join(
+                    ", "
+                )}.`
             );
         case "DISTRIBUTION_PAGE":
             return (
                 "- Search dataset tool: search and return relevant datasets based on the user inquiry.\n" +
-                "- Tabular data analysis tool: When one of tabular data file of the current dataset distribution is relevant to the user inquiry. " +
-                "This tool will be used to answer the user inquiry with tabular data analysis result."
+                "- Tabular data analysis tool: When one of the current dataset distribution files is relevant to the user inquiry. " +
+                "This tool will be used to answer the user inquiry with tabular data analysis result.\n" +
+                `- Supported chatbot formats: ${getSupportedFormatLabels().join(
+                    ", "
+                )}.`
             );
         default:
             return "- Search dataset tool: search and return relevant datasets based on the user inquiry.";

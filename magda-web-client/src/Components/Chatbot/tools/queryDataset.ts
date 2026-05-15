@@ -7,8 +7,10 @@ import { runQuery } from "../../../libs/sqlUtils";
 import type { WebLLMTool } from "../ChatWebLLM";
 //import { createQueryDataFilesWithSQLQueryTool } from "./queryDataFilesWithSQLQuery";
 import toYaml from "libs/toYaml";
-
-const SUPPORT_FORMATS = ["CSV-GEO-AU", "CSV"];
+import {
+    getSupportedFormatLabels,
+    isChatbotSupportedFormat
+} from "./supportedFormats";
 
 export async function getDistColumnNames(
     distRef: string | number
@@ -60,9 +62,7 @@ export async function createQueryDatasetTool(
             })
             .filter(
                 (item) =>
-                    SUPPORT_FORMATS.indexOf(
-                        item.dist?.format?.trim().toUpperCase()
-                    ) !== -1 &&
+                    isChatbotSupportedFormat(item.dist?.format) &&
                     (!keyword ||
                         (item.dist?.title || "")
                             .toLowerCase()
@@ -73,15 +73,10 @@ export async function createQueryDatasetTool(
             if (keyword) {
                 // Determine all valid titles so we can guide the agent
                 const allFormats = distributions
-                    .filter(
-                        (d) =>
-                            SUPPORT_FORMATS.indexOf(
-                                d?.format?.trim().toUpperCase()
-                            ) !== -1
-                    )
+                    .filter((d) => isChatbotSupportedFormat(d?.format))
                     .map((d) => `- ${d.title || "Untitled"}`);
 
-                return `There are no queryable CSV files matching the keyword "${keyword}". Please try calling queryDataset again without the keyword, or use an exact keyword from this list:\n${allFormats.join(
+                return `There are no queryable distributions matching the keyword "${keyword}". Please try calling queryDataset again without the keyword, or use an exact keyword from this list:\n${allFormats.join(
                     "\n"
                 )}`;
             }
@@ -100,7 +95,7 @@ export async function createQueryDatasetTool(
             this.keyContextData.datasetSchema = undefined;
             this.keyContextData.datasetSchemaReady = false;
 
-            return "This dataset has no supported CSV distributions to query. Please select a different dataset from the current search results and continue automatically.";
+            return "This dataset has no supported distributions to query. Please select a different dataset from the current search results and continue automatically.";
         }
 
         this.queue.push(
@@ -162,8 +157,9 @@ export async function createQueryDatasetTool(
     return {
         name: "queryDataset",
         func: queryDataset,
-        description:
-            "Use this tool to inspect selected dataset distributions and discover columns before executeSQLQuery.",
+        description: `Use this tool to inspect selected dataset distributions and discover columns before executeSQLQuery. Supported formats: ${getSupportedFormatLabels().join(
+            ", "
+        )}.`,
         parameters: [
             {
                 name: "keyword",
