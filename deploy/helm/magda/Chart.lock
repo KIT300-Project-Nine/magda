@@ -30,4 +30,4 @@ dependencies:
   repository: oci://ghcr.io/magda-io/charts
   version: 2.0.0
 digest: sha256:40cd523ac5632f738e8f7f41df7cada91b2780fb8fd8d3d21fb236d22d80f574
-generated: "2025-12-24T00:45:36.839728248Z"
+generated: "2026-05-18T21:08:05.6224955+10:00"
