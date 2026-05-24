@@ -1,0 +1,20 @@
+.magda-text-to-sql-panel {
+    position: relative;
+    padding: 8px 0 4px;
+
+    .nl-input-row {
+        display: flex;
+        flex-direction: row;
+        align-items: flex-end;
+        gap: 8px;
+
+        .nl-query-input {
+            flex-grow: 1;
+        }
+
+        .translate-button {
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+    }
+}

@@ -148,7 +148,9 @@ async function source(...args) {
         } else if (typeof distId === "number" && distId >= 0) {
             if (!currentDistList?.[distId]) {
                 throw new Error(
-                    `Failed to load the distribution resource by index "${distId}": distribution with index "${distId}" doesn't exist or not set.`
+                    !currentDistList?.length
+                        ? `source(${distId}) requires an active dataset. Please navigate to a dataset page before running this query.`
+                        : `Failed to load the distribution resource by index "${distId}": distribution with index "${distId}" doesn't exist or not set.`
                 );
             }
             dist = { ...currentDistList[distId] };
