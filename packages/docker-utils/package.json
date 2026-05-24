@@ -29,7 +29,7 @@
     "fs-extra": "^11.2.0",
     "is-subdir": "^1.0.2",
     "lodash": "^4.17.5",
-    "yargs": "^12.0.5"
+    "yargs": "^17.7.2"
   },
   "magda": {
     "language": "typescript",

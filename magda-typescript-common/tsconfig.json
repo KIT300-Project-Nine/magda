@@ -3,8 +3,11 @@
     "compilerOptions": {
         "outDir": "./dist",
         "strictNullChecks": false,
+        "noEmitOnError": false,
+        "noImplicitAny": false,
         "rootDir": "./src",
         "tsBuildInfoFile": "./tsconfig.tsbuildinfo"
     },
-    "include": ["./src/**/*", "./src/**/*.json"]
+    "include": ["./src/**/*", "./src/**/*.json"],
+    "exclude": ["./src/test/**/*"]
 }

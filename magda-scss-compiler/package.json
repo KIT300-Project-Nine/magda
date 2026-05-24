@@ -36,7 +36,7 @@
     "@types/sinon": "^2.3.3",
     "@types/tempy": "^0.1.0",
     "@types/urijs": "^1.19.19",
-    "@types/yargs": "^12.0.8",
+    "@types/yargs": "^17.0.34",
     "c8": "^9.0.0",
     "chai": "^5.0.0-rc.0",
     "mocha": "^10.2.0",
@@ -59,7 +59,7 @@
     "sass": "^1.71.0",
     "tempy": "^0.2.1",
     "urijs": "^1.19.11",
-    "yargs": "^12.0.5"
+    "yargs": "^17.7.2"
   },
   "mocha": {
     "import": "tsx/esm",

@@ -17,6 +17,7 @@
         "lib": ["dom", "dom.iterable", "esnext"],
         "isolatedModules": true,
         "skipLibCheck": true,
+        "typeRoots": ["./node_modules/@types", "../node_modules/@types"],
         "baseUrl": "src",
         "composite": false,
         "noFallthroughCasesInSwitch": true,

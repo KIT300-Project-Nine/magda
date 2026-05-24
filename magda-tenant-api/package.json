@@ -34,7 +34,7 @@
     "object-path": "^0.11.4",
     "pg": "^8.11.3",
     "sql-syntax": "^2.0.1",
-    "yargs": "^12.0.5"
+    "yargs": "^17.7.2"
   },
   "devDependencies": {
     "@magda/scripts": "^5.6.0",
@@ -46,7 +46,7 @@
     "@types/pg": "^8.6.5",
     "@types/sinon": "^7.0.11",
     "@types/supertest": "^2.0.16",
-    "@types/yargs": "^12.0.8",
+    "@types/yargs": "^17.0.34",
     "c8": "^9.0.0",
     "chai": "^5.0.0-rc.0",
     "mocha": "^10.2.0",

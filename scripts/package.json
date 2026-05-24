@@ -74,7 +74,7 @@
     "typescript": "~5.3.3",
     "uniqid": "^5.0.3",
     "yaml": "^1.10.0",
-    "yargs": "^12.0.5"
+    "yargs": "^17.7.2"
   },
   "keywords": [
     "Magda",

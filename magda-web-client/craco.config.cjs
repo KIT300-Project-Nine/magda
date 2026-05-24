@@ -1,7 +1,7 @@
 const { isEqual } = require("lodash");
 const FilterWarningsPlugin = require("webpack-filter-warnings-plugin");
 const NodePolyfillPlugin = require("node-polyfill-webpack-plugin");
-const IgnorePlugin = require("webpack").IgnorePlugin;
+const { IgnorePlugin, ProvidePlugin } = require("webpack");
 const TerserPlugin = require("terser-webpack-plugin");
 const path = require("path");
 
@@ -70,16 +70,72 @@ module.exports = {
             // --- css order not always matter. Plus, complete avoid this issue probably require a new way of including component scss files
             webpackConfig.plugins.push(
                 new FilterWarningsPlugin({
-                    exclude: /mini-css-extract-plugin[^]*Conflicting order between:/
+                    exclude:
+                        /mini-css-extract-plugin[^]*Conflicting order between:/
                 })
             );
 
             webpackConfig.plugins.push(new NodePolyfillPlugin());
 
+            // Inject `process` polyfill into every module that references it.
+            // NodePolyfillPlugin v4 does not include process by default, but
+            // @langchain/core and other deps use process.env at module scope.
+            webpackConfig.plugins.push(
+                new ProvidePlugin({
+                    process: path.resolve(
+                        __dirname,
+                        "../node_modules/process/browser.js"
+                    )
+                })
+            );
+
             webpackConfig.module.noParse = [/dist\/alasql\.min\.js$/];
+
+            // Remove CRA's ModuleScopePlugin so aliases can point outside src/
+            const ModuleScopePlugin = require("react-dev-utils/ModuleScopePlugin");
+            webpackConfig.resolve.plugins = (
+                webpackConfig.resolve.plugins || []
+            ).filter((p) => !(p instanceof ModuleScopePlugin));
+
+            // alasql package.json is missing exports entries for subpaths used
+            // by dynamic imports in sqlUtils.ts; bypass exports field with alias
+            // uuid v10 ESM browser build causes "unsafeStringify not exported"
+            // when resolved alongside sockjs's old uuid v8; use CJS build instead
+            // process/browser is imported by @langchain/core which is strict ESM —
+            // it needs the .js extension; alias to the real file to satisfy both
+            // the ProvidePlugin injection and direct imports from ESM modules
+            webpackConfig.resolve.alias = {
+                ...(webpackConfig.resolve.alias || {}),
+                "alasql/dist/alasql.min.js": path.resolve(
+                    __dirname,
+                    "../node_modules/alasql/dist/alasql.min.js"
+                ),
+                "alasql/modules/xlsx/xlsx.js": path.resolve(
+                    __dirname,
+                    "../node_modules/alasql/modules/xlsx/xlsx.js"
+                ),
+                uuid: path.resolve(
+                    __dirname,
+                    "../node_modules/uuid/dist/cjs/index.js"
+                ),
+                "process/browser": path.resolve(
+                    __dirname,
+                    "../node_modules/process/browser.js"
+                )
+            };
+
+            // ESM packages that import node built-ins or polyfills without .js extensions
+            webpackConfig.module.rules.push({
+                test: /\.m?js$/,
+                include: /node_modules\/(@mlc-ai|pdfjs-dist|@langchain)/,
+                resolve: {
+                    fullySpecified: false
+                }
+            });
             webpackConfig.plugins.push(
                 new IgnorePlugin({
-                    resourceRegExp: /(^fs$|cptable|^es6-promise$|^net$|^tls$|^forever-agent$|^tough-cookie$|^path$|^request$|react-native|^vertx$)/
+                    resourceRegExp:
+                        /(^fs$|cptable|^es6-promise$|^net$|^tls$|^forever-agent$|^tough-cookie$|^path$|^request$|react-native|^vertx$)/
                 })
             );
 
