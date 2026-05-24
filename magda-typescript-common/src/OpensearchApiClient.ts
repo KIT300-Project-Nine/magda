@@ -81,11 +81,11 @@ export default class OpensearchApiClient {
         await this.client.helpers
             .bulk({
                 datasource: documents,
-                onDocument(_) {
+                onDocument(_: any) {
                     return { index: { _index: indexName } };
                 }
             })
-            .then((result) => {
+            .then((result: any) => {
                 console.log(
                     `Successfully indexed ${result.successful} documents.`
                 );

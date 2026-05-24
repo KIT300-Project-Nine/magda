@@ -58,6 +58,36 @@
                 }
             }
         }
+        .nl-mode-toggle {
+            margin-bottom: 6px;
+        }
+        .mode-tab-switcher {
+            display: flex;
+            flex-direction: row;
+            border-bottom: 2px solid #e5e5ea;
+            margin-bottom: 8px;
+            gap: 0;
+            .mode-tab {
+                background: none;
+                border: none;
+                border-bottom: 3px solid transparent;
+                margin-bottom: -2px;
+                padding: 6px 16px;
+                font-size: 13px;
+                font-weight: 500;
+                color: #8e8e93;
+                cursor: pointer;
+                transition: color 0.15s, border-color 0.15s;
+                &:hover {
+                    color: #3498ff;
+                }
+                &.active {
+                    color: #1675e0;
+                    border-bottom-color: #1675e0;
+                    font-weight: 600;
+                }
+            }
+        }
         .data-row {
             flex-grow: 1;
             margin-top: 10px;

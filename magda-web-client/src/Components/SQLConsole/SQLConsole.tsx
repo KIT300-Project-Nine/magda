@@ -33,6 +33,7 @@ import type { IAceEditor } from "react-ace/lib/types";
 import reportWarn from "helpers/reportWarn";
 import Popover from "rsuite/Popover";
 import SimpleMathTextBox from "./SimpleMathTextBox";
+import TextToSQLPanel from "./TextToSQLPanel";
 import { config } from "../../config";
 
 const { Column, HeaderCell, Cell } = Table;
@@ -92,6 +93,7 @@ const SQLConsole: FunctionComponent<PropsType> = (props) => {
     const [size, setSize] = useState<string>("sm");
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [isDownloadingCsv, setIsDownloadingCsv] = useState<boolean>(false);
+    const [nlModeEnabled, setNlModeEnabled] = useState<boolean>(false);
     const aceEditorRef = aceEditorCtlRef?.editor;
 
     const onRunQuery = useCallback(
@@ -138,6 +140,14 @@ const SQLConsole: FunctionComponent<PropsType> = (props) => {
         dispatch(setEditorContent(value ? value : ""));
         dispatch(setIsOpen(false));
     }, [dispatch, aceEditorRef]);
+
+    const onSQLGenerated = useCallback(
+        (sql: string) => {
+            aceEditorRef?.setValue(sql);
+            dispatch(setEditorContent(sql));
+        },
+        [aceEditorRef, dispatch]
+    );
 
     const onEditorLoad = useCallback(
         (editor: IAceEditor) => {
@@ -258,6 +268,32 @@ const SQLConsole: FunctionComponent<PropsType> = (props) => {
                 <div className="magda-sql-console-main-content-container">
                     <div className="query-row">
                         <Panel bordered className="query-panel">
+                            {config.enableChatbot ? (
+                                <div className="mode-tab-switcher">
+                                    <button
+                                        className={`mode-tab${
+                                            !nlModeEnabled ? " active" : ""
+                                        }`}
+                                        onClick={() => setNlModeEnabled(false)}
+                                    >
+                                        SQL Editor
+                                    </button>
+                                    <button
+                                        className={`mode-tab${
+                                            nlModeEnabled ? " active" : ""
+                                        }`}
+                                        onClick={() => setNlModeEnabled(true)}
+                                    >
+                                        Ask in Plain English
+                                    </button>
+                                </div>
+                            ) : null}
+                            {nlModeEnabled && config.enableChatbot ? (
+                                <TextToSQLPanel
+                                    appName="MAGDA SQL Assistant"
+                                    onSQLGenerated={onSQLGenerated}
+                                />
+                            ) : null}
                             {loadingAceEditor ? (
                                 <Loader
                                     backdrop

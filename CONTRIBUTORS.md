@@ -33,3 +33,5 @@ The following people have contributed to Magda:
 - Other Contributors
   - [Kat Ballo](https://github.com/ketikat)
   - [Sandra Arato](https://github.com/sandra-arato)
+  - [Mitch Clifford](https://github.com/mitchcl)
+  - [Armon Castor](https://github.com/GlitchedCloud)

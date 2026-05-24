@@ -113,6 +113,7 @@ export const defaultContextWindowSize = defaultContextWindowSizeOption?.value
 
 const DEFAULT_MODEL_CONFIG: WebLLMInputs = {
     model: "Qwen3-4B-q4f16_1-MLC",
+    model: "Qwen3-4B-q4f16_1-MLC",
     chatOptions: {
         temperature: 0,
         context_window_size: defaultContextWindowSize
