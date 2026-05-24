@@ -16,7 +16,7 @@ export default function (xmlData: string) {
     if (fastXmlParser.validate(xmlData) === true) {
         //optional
         const jsonObj = fastXmlParser.parse(xmlData, options);
-        var array = jsonToArray(jsonObj);
+        const array = jsonToArray(jsonObj);
         const data = {
             data: array,
             meta: {

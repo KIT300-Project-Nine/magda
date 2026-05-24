@@ -151,7 +151,7 @@ class EditDataset extends React.Component<Props, State> {
 
     render() {
         const { distributions } = this.state;
-        let { step } = this.props;
+        const { step } = this.props;
 
         const hideExitButton =
             this.props.isBackToReview ||

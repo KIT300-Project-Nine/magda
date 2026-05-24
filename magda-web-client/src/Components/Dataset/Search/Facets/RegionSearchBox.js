@@ -67,8 +67,8 @@ class RegionSearchBox extends Component {
     }
 
     move(direction) {
-        let totalNumberOfItemsToNavigate = this.props.options.length;
-        let current = this.state.indexOfOptionOnFocus;
+        const totalNumberOfItemsToNavigate = this.props.options.length;
+        const current = this.state.indexOfOptionOnFocus;
         let next;
         let previous;
 

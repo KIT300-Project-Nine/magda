@@ -124,7 +124,7 @@ const classificationValidator: CustomValidatorType = (
 };
 
 export default function DatasetAddAccessAndUsePage(props: Props) {
-    let {
+    const {
         distributions,
         dataset,
         licenseLevel,

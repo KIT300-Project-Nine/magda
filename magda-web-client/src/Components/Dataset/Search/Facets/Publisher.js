@@ -84,7 +84,7 @@ class Publisher extends Component {
 }
 
 function mapStateToProps(state) {
-    let { datasetSearch, facetPublisherSearch } = state;
+    const { datasetSearch, facetPublisherSearch } = state;
     return {
         publisherOptions: datasetSearch.publisherOptions,
         activePublishers: datasetSearch.activePublishers,

@@ -11,6 +11,8 @@ const executeSQLQuery: WebLLMTool = {
             createChatEventMessageCompleteMsg("Executing queries...")
         );
         const records = await runQuery<Record<string, any>[]>(sqlQuery);
+        this.keyContextData.queryResult = records;
+
         if (!records?.length) {
             this.queue.push(
                 createChatEventMessageCompleteMsg(
@@ -19,6 +21,7 @@ const executeSQLQuery: WebLLMTool = {
             );
             return null;
         }
+
         const table = markdownTable([
             Object.keys(records[0]),
             ...records.map((item) =>

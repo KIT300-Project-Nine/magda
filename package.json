@@ -17,6 +17,8 @@
     "src/pancake/**"
   ],
   "devDependencies": {
+    "@types/estree": "^1.0.5",
+    "@types/node": "^22.0.0",
     "glob": "^7.1.2",
     "husky": "^3.1.0",
     "lerna": "^3.20.2",
@@ -25,11 +27,9 @@
     "pretty-quick": "^2.0.1",
     "rimraf": "^3.0.0",
     "ts-module-alias-transformer": "^2.0.1",
-    "typescript": "~5.3.3",
     "tsx": "^4.7.0",
     "type-fest": "~2.18.0",
-    "@types/estree": "^1.0.5",
-    "@types/node": "^22.0.0"
+    "typescript": "~5.3.3"
   },
   "scripts": {
     "build": "lerna run build --stream --concurrency=1",
@@ -57,5 +57,6 @@
     "hooks": {
       "pre-commit": "pretty-quick --staged"
     }
-  }
+  },
+  "dependencies": {}
 }

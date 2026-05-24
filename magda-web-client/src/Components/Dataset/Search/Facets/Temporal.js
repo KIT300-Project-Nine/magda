@@ -75,7 +75,7 @@ class Temporal extends Component {
 }
 
 function mapStateToProps(state) {
-    let { datasetSearch } = state;
+    const { datasetSearch } = state;
     return {
         activeDateFrom: datasetSearch.activeDateFrom,
         activeDateTo: datasetSearch.activeDateTo,

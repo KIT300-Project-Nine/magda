@@ -43,7 +43,7 @@ export default class RequestFormLogic extends React.Component {
         const senderEmail = data.senderEmail;
         const message = data.message;
         const senderName = data.senderName;
-        var url = "";
+        let url = "";
         //check to see the type of request. This will change the api url accordingly
         if (this.props.requestType === "request") {
             url = config.correspondenceApiBaseUrl + "send/dataset/request";

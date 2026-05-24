@@ -112,7 +112,7 @@ class RegionMap extends Component {
         this.removeRegion();
         let regionType = props.region.regionType;
         if (!regionType) regionType = "STE";
-        let regionData = props.regionMapping[regionType];
+        const regionData = props.regionMapping[regionType];
         if (defined(regionData)) {
             this.getID = function (feature) {
                 return feature.properties[regionData.regionProp];
