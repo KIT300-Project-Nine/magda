@@ -1046,14 +1046,16 @@ export default class ServiceRunner {
                         );
                     }
                     const data = await res.json();
-                    if (data?.status !== "green") {
+                    // Single-node OpenSearch clusters are commonly "yellow"
+                    // (unassigned replicas) while still fully queryable.
+                    if (data?.status !== "green" && data?.status !== "yellow") {
                         throw new Error(
                             `The cluster is in ${data?.status} status.`
                         );
                     }
                     return true;
                 },
-                60000
+                this.maxWaitLiveTime
             );
             if (this.dockerServiceForwardHost) {
                 await this.createPortForward(9200);
