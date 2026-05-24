@@ -96,7 +96,7 @@ class FacetRegion extends Component {
     // see Facet.renderOption(option, optionMax, onFocus)
     // Here is only for mark up change
     renderOption(option, onClick, optionMax, onFocus) {
-        let regionType = option.regionType;
+        const regionType = option.regionType;
         return (
             <button
                 className="btn-facet-option btn-facet-option__location"

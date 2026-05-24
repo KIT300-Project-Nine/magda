@@ -113,7 +113,7 @@ export function fetchOrganization(
     publisherId: string,
     noCache: boolean = false
 ): Promise<Publisher> {
-    let url: string =
+    const url: string =
         config.registryApiReadOnlyBaseUrl +
         `records/${encodeURIComponent(
             publisherId
@@ -548,7 +548,7 @@ export async function fetchRecordsSummary(
     );
 
     if (!response.ok) {
-        let statusText = response.statusText;
+        const statusText = response.statusText;
         throw new ServerError(statusText, response.status);
     }
     const data = await response.json();

@@ -12,7 +12,7 @@ import {
     EVENT_TYPE_PARTIAL_MSG_FINISH,
     createChatEventMessage
 } from "../Messaging";
-import { WebLLMTool } from "../ChatWebLLM";
+import type { WebLLMTool } from "../ChatWebLLM";
 
 const systemPromptTpl = SystemMessagePromptTemplate.fromTemplate(
     `You are a friendly AI agent named "{appName}". \n` +
@@ -27,13 +27,15 @@ function createToolList(location: Location): string {
             return (
                 "- Search dataset tool: search and return relevant datasets based on the user inquiry.\n" +
                 "- Tabular data analysis tool: When one of tabular data file of the current dataset is relevant to the user inquiry. " +
-                "This tool will be used to answer the user inquiry with tabular data analysis result."
+                "This tool will be used to answer the user inquiry with tabular data analysis result.\n" +
+                "- Geospatial rendering tool: When user asks for a map and you don't have GeoJSON, use Tabular data analysis tools (queryDataset then executeSQLQuery) to get data with coordinates, then call the Geospatial rendering tool."
             );
         case "DISTRIBUTION_PAGE":
             return (
                 "- Search dataset tool: search and return relevant datasets based on the user inquiry.\n" +
                 "- Tabular data analysis tool: When one of tabular data file of the current dataset distribution is relevant to the user inquiry. " +
-                "This tool will be used to answer the user inquiry with tabular data analysis result."
+                "This tool will be used to answer the user inquiry with tabular data analysis result.\n" +
+                "- Geospatial rendering tool: When user asks for a map and you don't have GeoJSON, use Tabular data analysis tools (queryDataset then executeSQLQuery) to get data with coordinates, then call the Geospatial rendering tool."
             );
         default:
             return "- Search dataset tool: search and return relevant datasets based on the user inquiry.";

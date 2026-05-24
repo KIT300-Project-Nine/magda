@@ -16,7 +16,6 @@ import {
     EVENT_TYPE_ERROR,
     EVENT_TYPE_PARTIAL_MSG_FINISH,
     EVENT_TYPE_PING,
-    NoErrorStop,
     STREAM_TYPE,
     STREAM_TYPE_AGENT_STEP,
     STREAM_TYPE_PARTIAL_MSG,
@@ -254,7 +253,7 @@ const ChatBoxMessagePanel: FunctionComponent<PropsType> = (props) => {
 
             if (eventMessage.event === EVENT_TYPE_CLOSE) {
                 resetMessageProcessingStatus();
-                throw new NoErrorStop();
+                return;
             }
 
             if (

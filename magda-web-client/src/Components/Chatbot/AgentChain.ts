@@ -17,6 +17,12 @@ import {
 import { History, Location } from "history";
 import { ParsedDataset, ParsedDistribution } from "helpers/record";
 import createTools from "./tools";
+import {
+    MAX_TOOL_STEPS,
+    MAX_CONSECUTIVE_SAME_TOOL_CALLS,
+    filterAvailableTools,
+    serializeToolResult
+} from "./orchestration";
 
 class AgentChain {
     static agentChain: AgentChain | null = null;
@@ -66,13 +72,18 @@ class AgentChain {
     public loadProgress?: InitProgressReport;
     private loadProgressCallback?: InitProgressCallback;
     public chatHistory: BaseMessage[] = [];
+    public agentMessages: { role: string; content: string }[] = [];
     public navHistory: History;
     public navLocation: Location;
     public appName: string;
     public dataset: ParsedDataset | undefined;
     public distribution: ParsedDistribution | undefined;
     public keyContextData: KeyContextData = {
-        queryResult: undefined
+        queryResult: undefined,
+        searchResults: undefined,
+        selectedDataset: undefined,
+        datasetSchema: undefined,
+        datasetSchemaReady: false
     };
     public debug: boolean = false;
     public directModelAccess: boolean = false;
@@ -169,6 +180,12 @@ class AgentChain {
     }
 
     async stream(question: string): Promise<AsyncIterable<ChatEventMessage>> {
+        this.agentMessages.push({
+            role: "user",
+            content: question
+        });
+        // Reset chart rendered flag for new query
+        this.keyContextData.chartRendered = false;
         const queue = new AsyncQueue<ChatEventMessage>();
         const input: ChainInput = {
             question,
@@ -222,9 +239,8 @@ class AgentChain {
             }
             resolve(buffer);
         }).catch((e) => {
-            createChatEventMessage(EVENT_TYPE_ERROR, {
-                error: e
-            });
+            queue.push(createChatEventMessageErrorMsg(e as Error));
+            queue.done();
         });
         return queue;
     }
@@ -233,22 +249,127 @@ class AgentChain {
         return RunnableLambda.from(async (input: ChainInput) => {
             const { queue } = input;
             try {
-                const tools = await createTools(input);
                 if (this.debug) {
-                    console.log("available tools: ", tools);
+                    console.log("[Magda][chain] STEP START");
                 }
-                /// Invoke the model with the user's question and available tools
-                const result = await this.model.invokeTool(
-                    input.question,
-                    tools,
-                    input
-                );
-                const value = result?.value;
-                // If the result is empty/undefined, return early (no output)
-                if (typeof value === "undefined" || value === null) {
-                    return;
+                const maxSteps = MAX_TOOL_STEPS;
+
+                //start with initial question
+                const currentMessages: any[] = [...this.agentMessages];
+                let previousCallSignature = "";
+                let repeatedCallCount = 0;
+                let lastToolName = "";
+                let lastToolResult: any = null;
+
+                for (let step = 0; step < maxSteps; step++) {
+                    const tools = await createTools(input);
+                    const availableTools = filterAvailableTools(tools, input);
+
+                    if (this.debug) {
+                        console.log(
+                            "TOOLS AVAILABLE:",
+                            availableTools.map((t) => t.name)
+                        );
+                    }
+
+                    if (!availableTools.length) {
+                        throw new Error(
+                            "No tools are available for the current execution state."
+                        );
+                    }
+
+                    if (this.debug) {
+                        console.log("[Magda][chain] step:", step);
+                        console.log(
+                            "[Magda][chain] currentMessages:",
+                            currentMessages
+                        );
+                    }
+
+                    const result = await this.model.invokeTool(
+                        currentMessages,
+                        availableTools,
+                        input
+                    );
+
+                    if (!result) return;
+
+                    //We are done if it's a conversational response
+                    if (result.name === "Conversational Response") {
+                        const isDefaultAgentAvailable = availableTools.some(
+                            (t) => t.name === "defaultAgent"
+                        );
+
+                        if (!isDefaultAgentAvailable) {
+                            console.log(
+                                "[Magda][chain] LLM produced text instead of using a required tool. Continuing chain."
+                            );
+                            currentMessages.push({
+                                role: "assistant",
+                                content: result.value
+                            });
+                            currentMessages.push({
+                                role: "user",
+                                content:
+                                    "You must call the next tool to continue the workflow. Do not answer conversationally yet. Please use one of the available tools."
+                            });
+                            continue;
+                        }
+
+                        // If the last tool was searchDatasets, return the full search results
+                        // instead of just the LLM-generated response
+                        const outputToReturn =
+                            lastToolName === "searchDatasets" && lastToolResult
+                                ? lastToolResult
+                                : result.value;
+
+                        this.agentMessages.push({
+                            role: "assistant",
+                            content: outputToReturn
+                        });
+
+                        this.agentMessages = this.agentMessages.slice(-10);
+
+                        return outputToReturn;
+                    }
+
+                    const currentCallSignature = `${
+                        result.name
+                    }:${JSON.stringify(result.args || {})}`;
+                    if (currentCallSignature === previousCallSignature) {
+                        repeatedCallCount += 1;
+                        if (
+                            repeatedCallCount >= MAX_CONSECUTIVE_SAME_TOOL_CALLS
+                        ) {
+                            throw new Error(
+                                `The tool call loop is repeating ${result.name} with the same arguments.`
+                            );
+                        }
+                    } else {
+                        repeatedCallCount = 0;
+                        previousCallSignature = currentCallSignature;
+                    }
+
+                    // Track this tool for potential use in conversational response
+                    lastToolName = result.name;
+                    lastToolResult = result.value;
+
+                    currentMessages.push({
+                        role: "user",
+                        content: `Tool ${
+                            result.name
+                        } returned: ${serializeToolResult(result.value)}`
+                    });
+
+                    console.log("[Magda][chain TOOL RESULT]:", result);
+
+                    console.log("[Magda][chain TOOL USED]:", result.name);
+                    console.log("[Magda][chain TOOL OUTPUT]:", result.value);
+
+                    console.log("AGENT MESSAGES:", this.agentMessages);
                 }
-                return `${value}`;
+
+                return "Maximum steps reached without a final answer";
             } catch (e) {
                 const rawError = e as Error;
 

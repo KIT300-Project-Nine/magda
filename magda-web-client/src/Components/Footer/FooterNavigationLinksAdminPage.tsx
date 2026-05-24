@@ -28,7 +28,7 @@ class StoriesAdminPage extends Component<any, any> {
         const { category, size } = this.props.match.params;
         const pathPrefix = `footer/navigation/${size}/category-links/${category}`;
 
-        let cat: any = this.state.category;
+        const cat: any = this.state.category;
         const categoryLabel = cat ? cat.label : "Loading...";
         const categoryPathPrefix = `footer/navigation/${size}/category/${category}`;
         const saveCategoryLabel = (value) => {

@@ -41,7 +41,7 @@ export default class HighlightsAdminPage extends React.Component<any, any> {
                     }
                 }
                 items = Object.entries(items).map((params) => {
-                    let [id, body] = params;
+                    const [id, body] = params;
                     return Object.assign(body as any, { id });
                 });
                 this.updateState({ items });
@@ -179,11 +179,11 @@ export default class HighlightsAdminPage extends React.Component<any, any> {
     }
 
     async deleteItem(item) {
-        let toDelete = await listContent(
+        const toDelete = await listContent(
             `home/highlights/${item.id}`,
             `home/highlight-images/${item.id}/*`
         );
-        for (let item of toDelete) {
+        for (const item of toDelete) {
             await deleteContent(item.id);
         }
         this.refresh();
@@ -205,7 +205,7 @@ export default class HighlightsAdminPage extends React.Component<any, any> {
 
             const images = {};
 
-            for (let w of [
+            for (const w of [
                 [0, 550, 978],
                 [720, 720, 405],
                 [1080, 1080, 677],

@@ -274,7 +274,7 @@ const mapDispatchToProps = (dispatch) =>
     );
 
 function mapStateToProps(state, ownProps) {
-    let { datasetSearch } = state;
+    const { datasetSearch } = state;
     return {
         datasets: datasetSearch.datasets,
         activeFormats: datasetSearch.activeFormats,

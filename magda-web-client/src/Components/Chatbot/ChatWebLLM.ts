@@ -71,6 +71,7 @@ export interface WebLLMToolCallResult<T = any> {
     // the name of the tool called
     name: string;
     value: T;
+    args?: Record<string, any>;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
@@ -111,6 +112,7 @@ export const defaultContextWindowSize = defaultContextWindowSizeOption?.value
     : 4096;
 
 const DEFAULT_MODEL_CONFIG: WebLLMInputs = {
+    model: "Qwen3-4B-q4f16_1-MLC",
     model: "Qwen3-4B-q4f16_1-MLC",
     chatOptions: {
         temperature: 0,
@@ -305,8 +307,12 @@ export default class ChatWebLLM extends SimpleChatModel<WebLLMCallOptions> {
         return chunks.join("");
     }
 
+    //allow for arrays to be handled
     async invokeTool<T = any>(
-        userMessage: webllm.ChatCompletionUserMessageParam | string,
+        userMessage:
+            | webllm.ChatCompletionUserMessageParam
+            | string
+            | webllm.ChatCompletionMessageParam[],
         tools: WebLLMTool[],
         thisObj: any = undefined
     ): Promise<WebLLMToolCallResult<T> | undefined> {
@@ -337,7 +343,7 @@ export default class ChatWebLLM extends SimpleChatModel<WebLLMCallOptions> {
 
         const magdaIdentity = {
             role: "system",
-            content: `You are Magda, the intelligent, expert AI assistant for Magda, a federated, open-source data catalog for big data and small data.
+            content: `You are magda, the intelligent, expert AI assistant for Magda, a federated, open-source data catalog for big data and small data.
 
 CORE MISSION:
 Guide users to relevant open datasets and provide actionable data insights. You are the specific interface to this data catalog, not a general chatbot.
@@ -346,7 +352,36 @@ GUIDELINES:
 1. **Prioritize Tools**: Your primary power comes from your tools (Search, Analysis). Always look for opportunities to use them rather than answering from general knowledge.
 2. **Be Proactive**: Instead of generic offers ("How can I help?"), propose specific actions based on the user's input (e.g., "I can search the catalog for 'population growth' for you.").
 3. **Accuracy First**: Never make up dataset names or IDs. Only reference data returned by your tools.
-4. **Tone**: Confident, professional, and data-literate. You own your capabilities.`
+4. **Tone**: Confident, professional, and data-literate. You own your capabilities.
+
+CONVERSATION RULES:
+- If the user is asking general knowledge, factual questions, or casual conversation, answer directly without using tools.
+- Only use tools when the user is explicitly requesting datasets, data exploration, or analysis of external data sources.
+- Do NOT use tools for:
+  - greetings (e.g. "hi", "how are you")
+  - general knowledge questions
+  - simple factual questions
+- If unsure, default to answering directly unless the request clearly involves datasets or data retrieval.
+
+DATASET WORKFLOW RULES:
+- To find datasets, use the searchDatasets tool.
+- After calling searchDatasets, you will receive a list of datasets.
+- You MUST select a dataset using the selectDataset tool before attempting to query it.
+- Do NOT call queryDataset if no dataset has been selected.
+- Only use queryDataset if a dataset is currently selected or available in context.
+- If no dataset is selected, ask the user to choose one or clearly state that selection is required.
+
+MULTI-STEP EXECUTION RULES:
+- **Search-Only Requests**: If the user asks only to find/search/locate/discover datasets (without asking for analysis, querying, charting, or data exploration), STOP after searchDatasets returns results. Return the list and ask if they want to explore further.
+  - Examples of search-only: "find datasets about trees", "show me datasets on climate", "search for population data"
+  - In these cases, the user's request is COMPLETE after you provide the search results.
+- **Analysis Requests**: If the user asks for analysis, queries, charts, or data exploration, CONTINUE through the full chain.
+  - Examples of analysis: "analyze tree species distribution", "show me a chart of temperature trends", "query the population data for trends"
+  - In these cases, continue until all steps are completed.
+- If the user's intent is ambiguous (e.g., "tell me about datasets on trees"), assume search-only unless they explicitly ask for analysis.
+- Do NOT automatically select a dataset or continue to querying after a search without explicit user request.
+- Do NOT describe what you will do next — execute the next tool instead.
+- Your task is only complete when the user's full request has been answered.`
         };
 
         const messages =
@@ -358,12 +393,14 @@ GUIDELINES:
                       }
                   ]
                 : Array.isArray(userMessage)
-                ? userMessage
-                : [userMessage];
+                ? ((userMessage as unknown) as webllm.ChatCompletion[])
+                : [
+                      (userMessage as unknown) as webllm.ChatCompletionAssistantMessageParam
+                  ];
 
         // Filter out any existing system messages to ensure magdaIdentity is the only one and is first
         const userMessagesFiltered = messages.filter(
-            (m) => m?.role !== "system"
+            (m) => "role" in m && m.role !== "system"
         );
 
         const request: webllm.ChatCompletionRequest = {
@@ -402,9 +439,16 @@ GUIDELINES:
         }
         const toolCall = reply.choices[0].message.tool_calls[0].function;
         const funcName = toolCall.name;
-        const funcArgsObj: Record<string, any> = toolCall?.arguments?.length
-            ? JSON.parse(toolCall.arguments)
-            : {};
+        let funcArgsObj: Record<string, any> = {};
+        if (toolCall?.arguments?.length) {
+            try {
+                funcArgsObj = JSON.parse(toolCall.arguments);
+            } catch (e) {
+                throw new Error(
+                    `Invalid tool arguments from model for tool ${funcName}`
+                );
+            }
+        }
         const toolCalled = tools.find((tool) => tool.name === funcName);
         if (!toolCalled) {
             throw new Error(
@@ -418,7 +462,8 @@ GUIDELINES:
         const result = await toolCalled.func.call(thisObj, ...funcArgs);
         return {
             name: toolCalled.name,
-            value: result as T
+            value: result as T,
+            args: funcArgsObj
         };
     }
 }

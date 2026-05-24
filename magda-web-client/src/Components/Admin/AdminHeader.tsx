@@ -7,7 +7,7 @@ import CommonLink from "Components/Common/CommonLink";
 export default class AdminHeader extends Component<any, any> {
     render() {
         const crumbs: any[] = [];
-        let title = ["Admin"];
+        const title = ["Admin"];
         if (this.props.title) {
             crumbs.push(
                 <li key="admin">
