@@ -35,3 +35,6 @@ The following people have contributed to Magda:
   - [Sandra Arato](https://github.com/sandra-arato)
   - [Armon Castor](https://github.com/GlitchedCloud)
   - [Mitch Clifford](https://github.com/mitchcl)
+  - [Thomas Doyle](https://github.com/twdoyle)
+  - [Robert Joseph](https://github.com/RobJo20)
+  - [Mahi Patel](https://github.com/MahiPatel-bit)
