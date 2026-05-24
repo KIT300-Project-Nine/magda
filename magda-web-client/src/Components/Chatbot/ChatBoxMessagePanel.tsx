@@ -55,7 +55,7 @@ function getDefaultMessage(appName: string): MessageItem {
     return {
         type: "bot",
         content: `Hi, I'm ${
-            appName ? appName : `Magda`
+            appName ? appName : "Magda" // changed to " " instead of ''
         }. Feel free to ask me anything about data.`
     };
 }
@@ -213,16 +213,40 @@ const ChatBoxMessagePanel: FunctionComponent<PropsType> = (props) => {
             const { streamId, streamType } = streamStateRef.current;
 
             if (eventMessage.event === EVENT_TYPE_ERROR) {
+                // Reset any "loading" or "processing" UI state since an error occurred
                 resetMessageProcessingStatus();
 
-                const errStr = eventMessage?.data?.error
+                // Extract the error information from the event payload.
+                // Safely hndle cases where the error might be nested under .data.error
+                // or fall back to a generic remote stream error message.
+                const rawError = eventMessage?.data?.error
                     ? String(eventMessage.data.error)
                     : `Remote stream error: ${eventMessage.data}`;
 
+                // Convert the error to lowercase once for easier matching below
+                const msg = String(rawError).toLowerCase();
+
+                // Determine a user-friendly error message based on common error indicators
+                // This catches 404 (not found), 401/403 (auth/permission issues), etc.
+                const safeMessage =
+                    msg.includes("404") ||
+                    msg.includes("not found") ||
+                    msg.includes("401") ||
+                    msg.includes("unauthorised") ||
+                    msg.includes("unauthorized") ||
+                    msg.includes("403") ||
+                    msg.includes("forbidden") ||
+                    msg.includes("permission") ||
+                    msg.includes("access denied")
+                        ? "The requested record is not available or you may not have access."
+                        : "Something went wrong while retrieving the dataset. Please try again.";
+
+                //throw new Error(safeMessage);
                 addMessage(messageQueueRef, {
                     type: "bot",
-                    content: `**⚠️ Error:**\n\n${errStr}`
+                    content: safeMessage
                 });
+
                 setDataReloadToken(Math.random().toString());
                 return;
             }

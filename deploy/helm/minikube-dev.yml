@@ -2,7 +2,7 @@ global:
   # For testing auth related feature, you need to set externalUrl to a HTTPs url. e.g. https://minikube.data.gov.au
   # See https://github.com/magda-io/magda/blob/master/docs/docs/how-to-setup-https-to-local-cluster.md
   # for how to setup https access.
-  externalUrl: https://minikube.data.gov.au
+  externalUrl: http://minikube.data.gov.au:30100
   rollingUpdate:
     maxUnavailable: 1
   exposeNodePorts: true
@@ -79,6 +79,8 @@ magda:
       helmet:
         contentSecurityPolicy:
           directives:
+            defaultSrc:
+              - "'self'"
             scriptSrc:
             - "'self'"
             - https://*.googletagmanager.com
@@ -156,3 +158,6 @@ magda-auth-arcgis:
 
 magda-auth-facebook:
   clientId: "173073926555600"
+
+magda-auth-internal:
+  enabled: true
