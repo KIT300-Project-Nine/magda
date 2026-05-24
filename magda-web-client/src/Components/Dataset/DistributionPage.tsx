@@ -1,7 +1,10 @@
 import React, { FunctionComponent } from "react";
+import { useDispatch } from "react-redux";
 import AUpageAlert from "pancake/react/page-alerts";
 import { Link, Route, Switch, Redirect, withRouter } from "react-router-dom";
 import Breadcrumbs from "Components/Common/Breadcrumbs";
+import { toggleIsOpen } from "actions/sqlConsoleActions";
+import { config } from "config";
 import defined from "helpers/defined";
 import { gapi } from "analytics/ga";
 import DistributionDetails from "./View/DistributionDetails";
@@ -68,6 +71,7 @@ const DistributionPageMainContent: FunctionComponent<{
     hasEditPermissions: boolean;
 }> = (props) => {
     const { distribution, dataset } = props;
+    const dispatch = useDispatch();
 
     const baseUrlDistribution = `/dataset/${encodeURI(
         props.datasetId
@@ -176,6 +180,14 @@ const DistributionPageMainContent: FunctionComponent<{
                     </span>
                     Download
                 </CommonLink>
+            ) : null}{" "}
+            {config.enableSQLConsole && distribution.downloadURL ? (
+                <button
+                    className="au-btn au-btn--secondary"
+                    onClick={() => dispatch(toggleIsOpen())}
+                >
+                    Query this data
+                </button>
             ) : null}{" "}
             {props.hasEditPermissions ? (
                 <button

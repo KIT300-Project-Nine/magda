@@ -6,15 +6,14 @@ import ReactSelectStyles from "Components/Common/react-select/ReactSelectStyles"
 import * as ValidationManager from "../../Dataset/Add/ValidationManager";
 import { CustomValidatorType } from "../../Dataset/Add/ValidationManager";
 
-import Select from "react-select/dist/declarations/src/Select";
-import type StateManagedSelect from "react-select/dist/declarations/src/stateManager";
-import type { StateManagerProps } from "react-select/dist/declarations/src/stateManager";
-import type CreatableSelect from "react-select/dist/declarations/src/Creatable";
-import type { CreatableProps } from "react-select/dist/declarations/src/Creatable";
-import type AsyncCreatableSelect from "react-select/dist/declarations/src/async-creatable";
-import type { AsyncCreatableProps } from "react-select/dist/declarations/src/async-creatable";
-import type AsyncSelect from "react-select/dist/declarations/src/Async";
-import type { AsyncProps } from "react-select/dist/declarations/src/Async";
+import type { Props as StateManagerProps } from "react-select";
+import type StateManagedSelect from "react-select";
+import type CreatableSelect from "react-select/creatable";
+import type { CreatableProps } from "react-select/creatable";
+import type AsyncCreatableSelect from "react-select/async-creatable";
+import type { AsyncCreatableProps } from "react-select/async-creatable";
+import type AsyncSelect from "react-select/async";
+import type { AsyncProps } from "react-select/async";
 
 const useValidation = ValidationManager.useValidation;
 
@@ -32,13 +31,13 @@ type PropsType<
     Group extends GroupBase<Option> = GroupBase<Option>
 > = (
     | (StateManagerProps<Option, IsMulti, Group> &
-          RefAttributes<Select<Option, IsMulti, Group>>)
+          RefAttributes<SelectInstance<Option, IsMulti, Group>>)
     | (AsyncCreatableProps<Option, IsMulti, Group> &
-          RefAttributes<Select<Option, IsMulti, Group>>)
+          RefAttributes<SelectInstance<Option, IsMulti, Group>>)
     | (CreatableProps<Option, IsMulti, Group> &
-          RefAttributes<Select<Option, IsMulti, Group>>)
+          RefAttributes<SelectInstance<Option, IsMulti, Group>>)
     | (AsyncProps<Option, IsMulti, Group> &
-          RefAttributes<Select<Option, IsMulti, Group>>)
+          RefAttributes<SelectInstance<Option, IsMulti, Group>>)
 ) &
     SelectExtraPropsType;
 

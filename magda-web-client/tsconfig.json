@@ -17,7 +17,7 @@
         "lib": ["dom", "dom.iterable", "esnext"],
         "isolatedModules": true,
         "skipLibCheck": true,
-        "paths": { "*": ["./src/*"] },
+        "baseUrl": "src",
         "composite": false,
         "noFallthroughCasesInSwitch": true,
         "noUnusedLocals": false,
