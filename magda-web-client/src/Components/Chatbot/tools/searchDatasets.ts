@@ -8,51 +8,9 @@ import { WebLLMTool } from "../ChatWebLLM";
 const MAX_DESC_DISPLAY_LENGTH = 250;
 const { uiBaseUrl } = config;
 
-// Neutral 404-style security message used to avoid revealing whether a dataset exists or is simply inaccessible to the current user.
-const SAFE_RECORD_ACCESS_MESSAGE =
-    "The requested record is not available or you may not have access.";
-
-// Attempts to extract a dataset/record identifier from the user's query. Supports queries such as:"dataset abc123xyz" or "record id abc123xyz"
-function extractDatasetId(question: string): string | null {
-    const match = question.match(
-        /(?:dataset|record)\s+(?:id\s+)?["']?([a-zA-Z0-9_-]+)["']?/i
-    );
-
-    return match ? match[1] : null;
-}
-
-// Checks whether the requested dataset record can be accessed through the Registry API. If the request fails or returns a non-success status, the chatbot will display a neutral safe-access message instead.
-async function checkDatasetAccess(datasetId: string): Promise<boolean> {
-    const encodedId = encodeURIComponent(encodeURIComponent(datasetId));
-
-    const url =
-        uiBaseUrl === "/"
-            ? `/api/v0/registry/records/${encodedId}`
-            : `${uiBaseUrl}/api/v0/registry/records/${encodedId}`;
-
-    const response = await fetch(url);
-
-    return response.ok;
-}
-
-// Main chatbot dataset retrieval flow. If a specific dataset ID is detected, the chatbot first verifies access through the Registry API before performing broader dataset search.
 async function retrieveDatasets(question: string, limit: number = 5) {
     if (!question) {
-        return SAFE_RECORD_ACCESS_MESSAGE;
-    }
-
-    const datasetId = extractDatasetId(question);
-
-    if (datasetId) {
-        try {
-            const canAccessDataset = await checkDatasetAccess(datasetId);
-
-            if (!canAccessDataset) {
-                return SAFE_RECORD_ACCESS_MESSAGE;
-            }
-        } catch (e) {
-            return SAFE_RECORD_ACCESS_MESSAGE;
-        }
+        return "The requested record is not available or you may not have access.";
     }
 
     const result = await searchDatasetsApi({ q: question, limit });
@@ -101,22 +59,27 @@ const searchDatasets: WebLLMTool = {
         return await retrieveDatasets(queryString);
     },
     description:
+        // Prettier formatting fixes
         "This tool can be used to search datasets relevant to the user's inquiry and present the dataset list to user as the answer. " +
-        "If the user asks for a specific dataset or record ID, pass that exact ID phrase into queryString. " +
-        "You must use this call when there is no better tool to use." +
-        "You should generate one or more keywords or a sentence on the user inquiry and supply as the compulsory `queryString` parameter.",
+        "You must use this call when there is no better tool to use. " +
+        "You should generate one or more keywords or a sentence based on the user inquiry " +
+        "and supply it as the compulsory `queryString` parameter.",
     parameters: [
         {
             name: "queryString",
             type: "string" as const,
             description:
-                "a query string used to search relevant datasets. Can be one or more keywords (separated by space). Must be a non-empty string."
+                // Prettier formatting fixes
+                "a query string used to search relevant datasets. Can be one or more " +
+                "keywords (separated by space). Must be a non-empty string."
         },
         {
             name: "limit",
             type: "number" as const,
             description:
-                "The max. number of datasets that you want to return. This is not a compulsory parameter. Default value is 5."
+                // Prettier formatting fixes
+                "The max. number of datasets that you want to return. This is not a " +
+                "compulsory parameter. Default value is 5."
         }
     ],
     requiredParameters: ["queryString"]
