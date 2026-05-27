@@ -77,7 +77,7 @@ class FeedbackForm extends React.Component {
     }
 
     changeValue(key, event) {
-        let curState = {
+        const curState = {
             ...this.state,
             [key]: event.target.value
         };

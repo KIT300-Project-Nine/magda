@@ -78,7 +78,7 @@ class Format extends Component {
 }
 
 function mapStateToProps(state) {
-    let { datasetSearch, facetFormatSearch } = state;
+    const { datasetSearch, facetFormatSearch } = state;
     return {
         formatOptions: datasetSearch.formatOptions,
         activeFormats: datasetSearch.activeFormats,

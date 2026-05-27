@@ -74,15 +74,15 @@ class FacetBasicBody extends Component {
         if (!option) {
             return null;
         }
-        let maxWidth = defined(optionMax)
+        const maxWidth = defined(optionMax)
             ? (+option.hitCount / optionMax.hitCount) * 200
             : 0;
-        let divStyle = {
+        const divStyle = {
             width: maxWidth + "px",
             height: "3px",
             background: "#4C2A85"
         };
-        let isActive = this.checkActiveOption(option);
+        const isActive = this.checkActiveOption(option);
 
         return (
             <button
@@ -113,9 +113,12 @@ class FacetBasicBody extends Component {
 
     render() {
         if (!this.props.isOpen) return null;
-        let options = this.props.options;
+        const options = this.props.options;
         // the option that has the max hit value, use to calculate volumne indicator
-        let maxOptionOptionList = maxBy(this.props.options, (o) => +o.hitCount);
+        const maxOptionOptionList = maxBy(
+            this.props.options,
+            (o) => +o.hitCount
+        );
 
         let optionsContent;
         if (options.length > 0) {

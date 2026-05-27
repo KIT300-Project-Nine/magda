@@ -201,7 +201,7 @@ const ConfirmMetadataModal: FunctionComponent<PropsType> = (props) => {
                             return item;
                         } else {
                             // --- replace the distribution and make a new version (only if it's already versioned)
-                            let newItem = { ...item };
+                            const newItem = { ...item };
                             if (newItem?.version?.versions?.length) {
                                 // --- the version data is valid then bump version
                                 const newVersion: VersionItem = {

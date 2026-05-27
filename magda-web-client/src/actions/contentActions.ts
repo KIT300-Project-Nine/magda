@@ -86,7 +86,7 @@ export async function readContent(contentId) {
 
 export async function updateContent(contentId, patch) {
     const contentIdUrl = config.contentApiBaseUrl + contentId;
-    let content = await readContent(contentId);
+    const content = await readContent(contentId);
     Object.assign(content, patch);
     await request("PUT", contentIdUrl, content, "application/json");
 }

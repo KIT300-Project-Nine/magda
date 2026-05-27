@@ -238,7 +238,7 @@ class SearchBox extends Component {
 }
 
 const mapStateToProps = (state, ownProps) => {
-    let { datasetSearch } = state;
+    const { datasetSearch } = state;
     return {
         freeText: datasetSearch.freeText,
         strings: state.content.strings
