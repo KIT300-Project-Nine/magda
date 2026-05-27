@@ -122,6 +122,17 @@ export const renderScssFilesExtra = async (
         replaceParamsFromScss(varFileContent, params)
     );
 
+    const darkModeFile = path.join(path.dirname(orgVarFile), "_dark-mode.scss");
+    if (fse.existsSync(darkModeFile)) {
+        const darkModeContent: string = await fse.readFile(darkModeFile, {
+            encoding: "utf-8"
+        });
+        await fse.writeFile(
+            darkModeFile,
+            replaceParamsFromScss(darkModeContent, params)
+        );
+    }
+
     otherfiles.unshift(orgIdxfile);
     const cssImports = await collectCssImports(otherfiles);
     return await renderScssData(

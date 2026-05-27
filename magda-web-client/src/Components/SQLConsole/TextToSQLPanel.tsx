@@ -19,6 +19,22 @@ import Loader from "rsuite/Loader";
 import reportError from "helpers/reportError";
 import "./TextToSQLPanel.scss";
 
+function inferColumnType(value: any): string {
+    if (value === null || value === undefined) return "unknown";
+    if (typeof value === "number") return "number";
+    if (typeof value === "boolean") return "boolean";
+    if (typeof value === "object") {
+        if (Array.isArray(value)) return "array";
+        return "object";
+    }
+    if (typeof value === "string") {
+        if (/^\d{4}-\d{2}-\d{2}/.test(value)) return "date";
+        if (!isNaN(Number(value)) && value.trim() !== "") return "number";
+        return "string";
+    }
+    return "string";
+}
+
 async function buildSchema(
     distributions: Array<{ idx: number; title: string }>
 ): Promise<string> {
@@ -26,7 +42,7 @@ async function buildSchema(
     for (const dist of distributions) {
         try {
             const records = await runQuery(
-                `SELECT * FROM source(${dist.idx}) limit 1`
+                `SELECT * FROM source(${dist.idx}) limit 5`
             );
             if (!records?.length) {
                 lines.push(
@@ -34,9 +50,19 @@ async function buildSchema(
                 );
                 continue;
             }
-            const cols = Object.keys(records[0]).join(", ");
+            const cols = Object.keys(records[0]).map((col) => {
+                for (const row of records) {
+                    const val = row[col];
+                    if (val !== null && val !== undefined && val !== "") {
+                        return `${col} (${inferColumnType(val)})`;
+                    }
+                }
+                return `${col} (unknown)`;
+            });
             lines.push(
-                `source(${dist.idx}) - "${dist.title}": columns [${cols}]`
+                `source(${dist.idx}) - "${dist.title}": columns [${cols.join(
+                    ", "
+                )}]`
             );
         } catch (e) {
             lines.push(
@@ -129,17 +155,20 @@ const TextToSQLPanel: FunctionComponent<Props> = ({
                 `You are an expert SQL analyst. Your only task is to translate the user's question into a SQL query.\n` +
                 `Data sources available via source(N) (0-indexed):\n${schema}\n\n` +
                 `Rules:\n` +
-                `- Output ONLY the raw SQL query, no explanation, no markdown, no code fences\n` +
+                `- Output ONLY the raw SQL query, no explanation, no markdown, no code fences, no thinking tags\n` +
+                `- Do NOT wrap your response in <think> tags or any XML tags\n` +
                 `- Use source(N) to reference the Nth data source\n` +
                 `- Use standard SQL syntax compatible with AlaSQL: use LIMIT instead of TOP, no schema prefixes\n` +
-                `- Limit to 25 rows unless the user specifies otherwise`;
+                `- Column types are shown in parentheses. Use appropriate comparisons for each type\n` +
+                `- Limit to 25 rows unless the user specifies otherwise\n` +
+                `/no_think`;
 
             const response = await agentChainRef.current.model.invoke([
                 new SystemMessage(systemText),
                 new HumanMessage(query)
             ]);
 
-            const sql =
+            let sql =
                 typeof response.content === "string"
                     ? response.content
                     : Array.isArray(response.content)
@@ -148,7 +177,10 @@ const TextToSQLPanel: FunctionComponent<Props> = ({
                           .join("")
                     : "";
 
-            onSQLGenerated(sql.trim());
+            sql = sql.replace(/<think>[\s\S]*?<\/think>/g, "").trim();
+            sql = sql.replace(/```(?:sql)?\s*([\s\S]*?)```/g, "$1").trim();
+
+            onSQLGenerated(sql);
         } catch (e) {
             reportError(`Translation failed: ${e}`, { duration: 5000 });
         } finally {
