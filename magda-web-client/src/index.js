@@ -15,10 +15,7 @@ import PropTypes from "prop-types";
 import ScrollToTop from "./helpers/ScrollToTop";
 import "./i18n";
 import { config } from "./config";
-import { initDarkMode } from "./helpers/darkMode";
 const { uiBaseUrl, authStatusRefreshInterval } = config;
-
-initDarkMode();
 
 const composeEnhancers = window.__REDUX_DEVTOOLS_EXTENSION_COMPOSE__ || compose;
 const store = createStore(

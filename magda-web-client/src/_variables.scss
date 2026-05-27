@@ -2,8 +2,8 @@
 
 $AU-font: "IBM Plex Sans", sans-serif;
 
-$magda-color-primary: #320e3b;
-$magda-color-secondary: #ffffff;
+$magda-color-primary: #395063;
+$magda-color-secondary: #30384d;
 
 $magda-color-light: lighten($magda-color-primary, 10%);
 $magda-color-dark: darken($magda-color-primary, 15%);
@@ -19,7 +19,7 @@ $AU-colordark-foreground-focus: $magda-color-secondary;
 $AU-colordark-foreground-text: #f7f7f7;
 $AU-colordark-background: $magda-color-primary;
 
-$header-color-background: #395063;
+$header-color-background: $magda-color-secondary;
 $header-opacity-desktop-background: 0.9;
 $header-color-border: $magda-color-primary;
 

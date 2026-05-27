@@ -85,6 +85,7 @@ class AgentChain {
         datasetSchema: undefined,
         datasetSchemaReady: false
     };
+    public isLoggedIn: boolean = false;
     public debug: boolean = false;
     public directModelAccess: boolean = false;
     public chain: Runnable<CommonInputType, string | null | undefined | void>;
@@ -168,6 +169,10 @@ class AgentChain {
         this.distribution = distribution;
     }
 
+    setIsLoggedIn(isLoggedIn: boolean) {
+        this.isLoggedIn = isLoggedIn;
+    }
+
     setLoadProgressCallback(loadProgressCallback?: InitProgressCallback) {
         this.loadProgressCallback = loadProgressCallback;
     }
@@ -196,7 +201,8 @@ class AgentChain {
             model: this.model,
             dataset: this.dataset,
             distribution: this.distribution,
-            keyContextData: this.keyContextData
+            keyContextData: this.keyContextData,
+            isLoggedIn: this.isLoggedIn
         };
 
         new Promise(async (resolve, reject) => {

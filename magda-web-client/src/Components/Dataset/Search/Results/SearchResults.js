@@ -37,9 +37,14 @@ class SearchResults extends Component {
     };
 
     render() {
+        const isLoggedIn = Boolean(this.props.user?.id);
         const filteredResults = this.props.searchResults.filter(
             (result) =>
-                !isRestrictedDataset(result.identifier, result.publisher?.name)
+                !isRestrictedDataset(
+                    result.identifier,
+                    result.publisher?.name,
+                    isLoggedIn
+                )
         );
 
         const suggestionBoxIndex = this.props.configuration

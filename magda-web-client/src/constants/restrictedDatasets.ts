@@ -11,8 +11,10 @@ export const RESTRICTED_ORGANISATIONS: ReadonlyArray<string> = [
 
 export function isRestrictedDataset(
     identifier: string,
-    publisherName?: string
+    publisherName?: string,
+    isLoggedIn?: boolean
 ): boolean {
+    if (isLoggedIn) return false;
     if (RESTRICTED_DATASET_IDS.includes(identifier)) return true;
     if (publisherName && RESTRICTED_ORGANISATIONS.includes(publisherName))
         return true;

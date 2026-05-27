@@ -86,6 +86,9 @@ const ChatBox: FunctionComponent<PropsType> = (props) => {
     const distribution = useSelector<StateType, ParsedDistribution | undefined>(
         (state) => state.record.distribution
     );
+    const isLoggedIn = useSelector<StateType, boolean>((state) =>
+        Boolean(state.userManagement.user?.id)
+    );
 
     useEffect(() => {
         agentChainRef.current?.setAppName(appName);
@@ -106,6 +109,10 @@ const ChatBox: FunctionComponent<PropsType> = (props) => {
     useEffect(() => {
         agentChainRef.current?.setDistribution(distribution);
     }, [distribution]);
+
+    useEffect(() => {
+        agentChainRef.current?.setIsLoggedIn(isLoggedIn);
+    }, [isLoggedIn]);
 
     useEffect(() => {
         agentChainRef.current?.setLoadProgressCallback(setLLMLoadProgress);

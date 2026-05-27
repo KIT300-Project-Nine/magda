@@ -1,85 +1,146 @@
-import React, { SyntheticEvent } from "react";
-import { connect } from "react-redux";
-import { NavLink, withRouter, RouteComponentProps } from "react-router-dom";
-import { User } from "reducers/userManagementReducer";
+import React, { useState, useRef, useEffect } from "react";
+import { useSelector, useDispatch } from "react-redux";
+import { StateType } from "../../reducers/reducer";
+import {
+    receiveWhoAmIUserInfo,
+    requestWhoAmI
+} from "../../actions/userManagementActions";
 import { config } from "../../config";
-import urijs from "urijs";
+import "./AccountNavbar.scss";
+
+const DEMO_USERS = [
+    { label: "Anonymous", username: "", password: "", id: "" },
+    {
+        label: "Regular User",
+        username: "user@mitchc.live",
+        password: "W9gvM5aT",
+        id: "91c44be7-ea75-4429-8c79-e9149731fab0"
+    },
+    {
+        label: "Admin",
+        username: "admin@mitchc.live",
+        password: "WMv93daM",
+        id: "46b97384-b1ee-47f4-8e90-a21c9cbf91ed"
+    }
+];
 
 type PropsType = {
-    user: User;
-    skipLink: boolean;
+    skipLink?: boolean;
 };
 
-class AccountNavbar extends React.Component<PropsType & RouteComponentProps> {
-    signOut(event: SyntheticEvent) {
-        event.preventDefault();
-        const authApiUri = urijs(config.authApiBaseUrl);
-        const authApiSeqments = authApiUri
-            .segmentCoded()
-            .filter((item) => !!item);
-        window.location.href = authApiUri
-            .segmentCoded(
-                authApiSeqments
-                    .slice(
-                        0,
-                        authApiSeqments.length - 3 >= 0
-                            ? authApiSeqments.length - 3
-                            : 0
-                    )
-                    .concat(["auth", "logout"])
-            )
-            .search({
-                redirect: config.baseExternalUrl
-            })
-            .toString();
-        return false;
-    }
+const AccountNavbar: React.FC<PropsType> = ({ skipLink }) => {
+    const dispatch = useDispatch();
+    const currentUser = useSelector(
+        (state: StateType) => state.userManagement.user
+    );
+    const [open, setOpen] = useState(false);
+    const [switching, setSwitching] = useState(false);
+    const dropdownRef = useRef<HTMLLIElement>(null);
 
-    render() {
-        const menu: JSX.Element[] = [];
-        if (this.props?.user?.id) {
-            menu.push(
-                <li
-                    key="/settings/account"
-                    id={this.props.skipLink ? "nav" : undefined}
-                >
-                    <NavLink to={`/settings/account`}>
-                        <span>Settings</span>
-                    </NavLink>
-                </li>
-            );
-            menu.push(
-                <li key="/signOut">
-                    <a href="#logout" onClick={this.signOut.bind(this)}>
-                        <span>Sign Out</span>
-                    </a>
-                </li>
-            );
-        } else {
-            menu.push(
-                <li key="/account">
-                    <NavLink
-                        to={`/account`}
-                        id={this.props.skipLink ? "nav" : undefined}
-                    >
-                        <span>Sign In</span>
-                    </NavLink>
-                </li>
-            );
+    const currentLabel =
+        DEMO_USERS.find((u) => u.id === currentUser?.id)?.label || "Anonymous";
+
+    useEffect(() => {
+        const handleClickOutside = (e: MouseEvent) => {
+            if (
+                dropdownRef.current &&
+                !dropdownRef.current.contains(e.target as Node)
+            ) {
+                setOpen(false);
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () =>
+            document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
+
+    const switchUser = async (user: typeof DEMO_USERS[number]) => {
+        setSwitching(true);
+        try {
+            if (!user.username) {
+                await fetch(config.baseUrl + "auth/logout", {
+                    ...config.commonFetchRequestOptions,
+                    credentials: "include"
+                });
+                dispatch(
+                    receiveWhoAmIUserInfo({
+                        id: "",
+                        displayName: "Anonymous User",
+                        email: "",
+                        photoURL: "",
+                        source: "",
+                        roles: [],
+                        permissions: []
+                    })
+                );
+            } else {
+                const formData = new URLSearchParams();
+                formData.append("username", user.username);
+                formData.append("password", user.password);
+
+                await fetch(config.baseUrl + "auth/login/plugin/internal", {
+                    method: "POST",
+                    credentials: "include",
+                    headers: {
+                        "Content-Type": "application/x-www-form-urlencoded"
+                    },
+                    body: formData.toString(),
+                    redirect: "manual"
+                });
+                await (dispatch as any)(requestWhoAmI());
+            }
+        } catch (e) {
+            console.error("User switch failed:", e);
+        } finally {
+            setSwitching(false);
+            setOpen(false);
         }
-        return menu;
-    }
-}
-
-function mapStateToProps(state) {
-    const { userManagement } = state;
-
-    return {
-        user: userManagement.user
     };
-}
 
-// This component is connected to redux via connect, and is not a route component,
-// therefore does not get updated when location change
-// we need to explicitly make it update by wrapping it in `withRouter`
-export default withRouter(connect(mapStateToProps)(AccountNavbar));
+    return (
+        <li
+            ref={dropdownRef}
+            className="account-navbar"
+            id={skipLink ? "nav" : undefined}
+        >
+            <button
+                className="account-navbar__trigger"
+                onClick={() => setOpen(!open)}
+                aria-expanded={open}
+                aria-haspopup="true"
+            >
+                <span>{currentLabel}</span>
+                <span className="account-navbar__caret">&#9662;</span>
+            </button>
+            {open && (
+                <ul className="account-navbar__dropdown">
+                    {DEMO_USERS.map((user) => (
+                        <li key={user.label}>
+                            <button
+                                className={`account-navbar__option ${
+                                    user.id === (currentUser?.id || "")
+                                        ? "account-navbar__option--active"
+                                        : ""
+                                }`}
+                                onClick={() => switchUser(user)}
+                                disabled={
+                                    switching ||
+                                    user.id === (currentUser?.id || "")
+                                }
+                            >
+                                {user.label}
+                                {user.id === (currentUser?.id || "") && (
+                                    <span className="account-navbar__check">
+                                        &#10003;
+                                    </span>
+                                )}
+                            </button>
+                        </li>
+                    ))}
+                </ul>
+            )}
+        </li>
+    );
+};
+
+export default AccountNavbar;

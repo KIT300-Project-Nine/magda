@@ -234,6 +234,7 @@ class Search extends Component<Props & any> {
                                         searchText={searchText}
                                         isFirstPage={currentPage === 1}
                                         suggestionBoxAtEnd={isBlankSearch}
+                                        user={this.props.user}
                                     />
                                     {this.props.hitCount >
                                         searchResultsPerPage && (
@@ -288,7 +289,8 @@ function mapStateToProps(state, ownProps) {
         error: datasetSearch.error,
         freeText: datasetSearch.freeText,
         strings: state.content.strings,
-        configuration: state.content.configuration
+        configuration: state.content.configuration,
+        user: state.userManagement.user
     };
 }
 

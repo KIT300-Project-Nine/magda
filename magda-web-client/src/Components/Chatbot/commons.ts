@@ -41,6 +41,7 @@ export interface ChainInput {
     dataset: ParsedDataset | undefined;
     distribution: ParsedDistribution | undefined;
     keyContextData: KeyContextData;
+    isLoggedIn: boolean;
 }
 
 export function getLocationType(location: Location): LocationType {

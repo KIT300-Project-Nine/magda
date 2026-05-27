@@ -9,7 +9,11 @@ import { isRestrictedDataset } from "constants/restrictedDatasets";
 const MAX_DESC_DISPLAY_LENGTH = 250;
 const { uiBaseUrl } = config;
 
-async function retrieveDatasets(question: string, limit: number = 5) {
+async function retrieveDatasets(
+    question: string,
+    isLoggedIn: boolean,
+    limit: number = 5
+) {
     if (!question) {
         return "The requested record is not available or you may not have access.";
     }
@@ -30,7 +34,12 @@ async function retrieveDatasets(question: string, limit: number = 5) {
 
     // Show real results only if we have reasonably good matches
     const filteredDataSets = result.dataSets.filter(
-        (item) => !isRestrictedDataset(item.identifier, item.publisher?.name)
+        (item) =>
+            !isRestrictedDataset(
+                item.identifier,
+                item.publisher?.name,
+                isLoggedIn
+            )
     );
 
     if (!filteredDataSets.length) {
@@ -70,9 +79,14 @@ const searchDatasets: WebLLMTool = {
         const result = await searchDatasetsApi({ q: queryString });
 
         // store datasets for future tools
+        const { isLoggedIn } = context;
         context.keyContextData.searchResults = (result?.dataSets || []).filter(
             (item) =>
-                !isRestrictedDataset(item.identifier, item.publisher?.name)
+                !isRestrictedDataset(
+                    item.identifier,
+                    item.publisher?.name,
+                    isLoggedIn
+                )
         );
         context.keyContextData.selectedDataset = undefined;
         context.keyContextData.datasetSchema = undefined;
@@ -81,7 +95,7 @@ const searchDatasets: WebLLMTool = {
         context.keyContextData.chartRendered = false;
         context.keyContextData.unqueryableDatasetIds = [];
 
-        return await retrieveDatasets(queryString);
+        return await retrieveDatasets(queryString, isLoggedIn);
     },
     description:
         // Prettier formatting fixes
