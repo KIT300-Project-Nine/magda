@@ -422,7 +422,7 @@ export function fuzzStringArbResult(
     return arbFlatMap(
         stringArb,
         (string) => fuzzStringArb(string, fuzzArb),
-        (fuzzedString) => undefined
+        (_fuzzedString: string): undefined => undefined
     );
 }
 

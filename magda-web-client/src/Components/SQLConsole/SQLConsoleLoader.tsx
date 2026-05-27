@@ -55,14 +55,23 @@ const SQLConsoleLoader: FunctionComponent<PropsType> = (props) => {
                 if (item) {
                     setCurrentDist(item);
                     setCurrentDistList([item]);
+                    return;
                 }
             }
-        } else {
+            setCurrentDist(null);
+            setCurrentDistList([]);
+        } else if (datasetId) {
             if (dataset?.identifier) {
                 const items = dataset2DistributionResourceItems(dataset);
                 setCurrentDistList(items);
-                setCurrentDist(items[0]);
+                setCurrentDist(items?.[0] ?? null);
+                return;
             }
+            setCurrentDist(null);
+            setCurrentDistList([]);
+        } else {
+            setCurrentDist(null);
+            setCurrentDistList([]);
         }
     }, [dataset, distribution, datasetId, distributionId]);
 
@@ -88,18 +97,20 @@ const SQLConsoleLoader: FunctionComponent<PropsType> = (props) => {
             if (
                 event.shiftKey === true &&
                 (event.metaKey === true || event.ctrlKey === true) &&
-                event.key === "s"
+                (event.key === "s" || event.key === "S")
             ) {
                 event.preventDefault();
                 event.stopPropagation();
                 if (isOpen) {
                     const value = aceEditorRef?.getValue();
                     dispatch(setEditorContent(value ? value : ""));
+                    dispatch(toggleIsOpen());
+                } else if (datasetId || distributionId) {
+                    dispatch(toggleIsOpen());
                 }
-                dispatch(toggleIsOpen());
             }
         },
-        [dispatch, isOpen, aceEditorRef]
+        [dispatch, isOpen, aceEditorRef, datasetId, distributionId]
     );
 
     useEffect(() => {
