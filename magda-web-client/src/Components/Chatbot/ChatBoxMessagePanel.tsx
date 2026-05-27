@@ -55,7 +55,7 @@ function getDefaultMessage(appName: string): MessageItem {
     return {
         type: "bot",
         content: `Hi, I'm ${
-            appName ? appName : `Magda`
+            appName ? appName : "Magda" // changed to " " instead of ''
         }. Feel free to ask me anything about data.`
     };
 }
@@ -213,18 +213,13 @@ const ChatBoxMessagePanel: FunctionComponent<PropsType> = (props) => {
             const { streamId, streamType } = streamStateRef.current;
 
             if (eventMessage.event === EVENT_TYPE_ERROR) {
+                // Reset any "loading" or "processing" UI state since an error occurred
                 resetMessageProcessingStatus();
-
-                const errStr = eventMessage?.data?.error
-                    ? String(eventMessage.data.error)
-                    : `Remote stream error: ${eventMessage.data}`;
-
-                addMessage(messageQueueRef, {
-                    type: "bot",
-                    content: `**⚠️ Error:**\n\n${errStr}`
-                });
-                setDataReloadToken(Math.random().toString());
-                return;
+                throw new Error(
+                    eventMessage?.data?.error
+                        ? String(eventMessage.data.error)
+                        : `Remote stream error: ${eventMessage.data}`
+                );
             }
 
             if (eventMessage.event === EVENT_TYPE_CLOSE) {
@@ -305,9 +300,8 @@ const ChatBoxMessagePanel: FunctionComponent<PropsType> = (props) => {
                                     ? step.observation.trim()
                                     : "";
                             if (observation) {
-                                const parsedObservation = parseJsonMarkdown(
-                                    observation
-                                );
+                                const parsedObservation =
+                                    parseJsonMarkdown(observation);
                                 if (!parsedObservation) {
                                     // When the observation is JSON data, we want to avoid to display it to the user
                                     // as it would be hard to read for non-technical users

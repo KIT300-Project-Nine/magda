@@ -12,8 +12,8 @@ A helm chart template [magda.filesToJson](https://github.com/magda-io/magda/blob
 
 This template support 2 parameters:
 
--   `filePattern`: Glob file search pattern string. All files (and their dir path) match the `Glob` pattern will be encoded and included in the configMap.
--   `pathPrefix` : Optional. Add `pathPrefix` to all file path generated in configMap JSON.
+- `filePattern`: Glob file search pattern string. All files (and their dir path) match the `Glob` pattern will be encoded and included in the configMap.
+- `pathPrefix` : Optional. Add `pathPrefix` to all file path generated in configMap JSON.
 
 Example Usage:
 
@@ -21,14 +21,14 @@ Example Usage:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-    name: "my-default-files"
+  name: "my-default-files"
 data:
-    my_default_files.json:
-        {
-            {
-                include "magda.filesToJson" (dict "root" . "filePattern" "my_dir/**/*" ),
-            },
-        }
+  my_default_files.json:
+    {
+      {
+        include "magda.filesToJson" (dict "root" . "filePattern" "my_dir/**/*" )
+      }
+    }
 ```
 
 Or with `pathPrefix`:
@@ -37,31 +37,31 @@ Or with `pathPrefix`:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-    name: "my-default-files"
+  name: "my-default-files"
 data:
-    my_default_files.json:
-        {
-            {
-                include "magda.filesToJson" (dict "root" . "filePattern" "my_dir/**/*" "pathPrefix" "test/" ),
-            },
-        }
+  my_default_files.json:
+    {
+      {
+        include "magda.filesToJson" (dict "root" . "filePattern" "my_dir/**/*" "pathPrefix" "test/" )
+      }
+    }
 ```
 
 ### Deployment Chart
 
 To pass the configMap to OPA, you need to create a deployment chart to deploy your application:
 
--   Your policy files directory should be put inside your chart directory.
--   The configMap template should be put into your chart template directory.
--   You can supply your custom policy file configMap by set the `customPolicyConfigMaps` value of opa sub chart. e.g.:
+- Your policy files directory should be put inside your chart directory.
+- The configMap template should be put into your chart template directory.
+- You can supply your custom policy file configMap by set the `customPolicyConfigMaps` value of opa sub chart. e.g.:
 
 ```yaml
 magda:
-    magda-core:
-        opa:
-            customPolicyConfigMaps:
-                - my-extra-policy-files-1
-                - my-extra-policy-files-2
+  magda-core:
+    opa:
+      customPolicyConfigMaps:
+        - my-extra-policy-files-1
+        - my-extra-policy-files-2
 ```
 
 A complete example can be found from:

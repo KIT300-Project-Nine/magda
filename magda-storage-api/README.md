@@ -12,14 +12,14 @@ expected config file. Create a `config.json` file with the appropriate parameter
 ```json5
 // Example Config
 {
-    listenPort: 6121,
-    minioAccessKey: "", // You would have specified this when creating the MinIO server
-    minioSecretKey: "", // You would have specified this when creating the MinIO server
-    minioEnableSSL: true,
-    minioHost: "localhost",
-    minioPort: 9000,
-    tenantId: 0,
-    uploadLimit: "100mb"
+  listenPort: 6121,
+  minioAccessKey: "", // You would have specified this when creating the MinIO server
+  minioSecretKey: "", // You would have specified this when creating the MinIO server
+  minioEnableSSL: true,
+  minioHost: "localhost",
+  minioPort: 9000,
+  tenantId: 0,
+  uploadLimit: "100mb"
 }
 ```
 

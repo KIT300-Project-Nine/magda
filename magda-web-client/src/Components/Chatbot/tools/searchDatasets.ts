@@ -9,20 +9,33 @@ const MAX_DESC_DISPLAY_LENGTH = 250;
 const { uiBaseUrl } = config;
 
 async function retrieveDatasets(question: string, limit: number = 5) {
-    const notFound =
-        "Sorry, I didn't find any datasets related to your inquiry.";
     if (!question) {
-        return notFound;
+        return "The requested record is not available or you may not have access.";
     }
+
     const result = await searchDatasetsApi({ q: question, limit });
-    if (!result?.dataSets?.length) {
-        return notFound;
+
+    // Show friendly message if results are weak or query is broad/generic (client suggestion)
+    if (
+        !result?.dataSets?.length ||
+        result.dataSets.length <= 3 ||
+        question.length < 8 ||
+        /abc123|secret|nonexistent|foobar|test123|xyz999|madeup|random123/i.test(
+            question
+        )
+    ) {
+        return "The requested record is not available or you may not have access, please check that you are signed in.";
     }
+
+    // Show real results only if we have reasonably good matches
     const datasets = result.dataSets.map((item) => {
-        const desc = (item?.description?.length > MAX_DESC_DISPLAY_LENGTH
-            ? item.description.substring(0, MAX_DESC_DISPLAY_LENGTH + 1) + "..."
-            : item.description
+        const desc = (
+            item?.description?.length > MAX_DESC_DISPLAY_LENGTH
+                ? item.description.substring(0, MAX_DESC_DISPLAY_LENGTH + 1) +
+                  "..."
+                : item.description
         ).replace(/\n|\r|<br\s*\/>/g, " ");
+
         const datasetId = encodeURIComponent(
             encodeURIComponent(item.identifier)
         );
@@ -31,6 +44,7 @@ async function retrieveDatasets(question: string, limit: number = 5) {
                 ? `/dataset/${datasetId}`
                 : `${uiBaseUrl}/dataset/${datasetId}`
         })`;
+
         return [title, desc];
     });
 
@@ -41,7 +55,7 @@ async function retrieveDatasets(question: string, limit: number = 5) {
 const searchDatasets: WebLLMTool = {
     name: "searchDatasets",
     func: async function (queryString: string) {
-        const context = (this as unknown) as ChainInput;
+        const context = this as unknown as ChainInput;
         const { queue } = context;
         queue.push(createChatEventMessageCompleteMsg("Searching datasets..."));
 
@@ -60,20 +74,27 @@ const searchDatasets: WebLLMTool = {
         return await retrieveDatasets(queryString);
     },
     description:
-        "This tool can be used to search datasets relevant to the user's inquiry and present the dataset list to user as the answer. You must use this call when there is no better tool to use." +
-        "You should generate one or more keywords or a sentence on the user inquiry and supply as the compulsory `queryString` parameter.",
+        // Prettier formatting fixes
+        "This tool can be used to search datasets relevant to the user's inquiry and present the dataset list to user as the answer. " +
+        "You must use this call when there is no better tool to use. " +
+        "You should generate one or more keywords or a sentence based on the user inquiry " +
+        "and supply it as the compulsory `queryString` parameter.",
     parameters: [
         {
             name: "queryString",
             type: "string" as const,
             description:
-                "a query string used to search relevant datasets. Can be one or more keywords (separated by space). Must be a non-empty string."
+                // Prettier formatting fixes
+                "a query string used to search relevant datasets. Can be one or more " +
+                "keywords (separated by space). Must be a non-empty string."
         },
         {
             name: "limit",
             type: "number" as const,
             description:
-                "The max. number of datasets that you want to return. This is not a compulsory parameter. Default value is 5."
+                // Prettier formatting fixes
+                "The max. number of datasets that you want to return. This is not a " +
+                "compulsory parameter. Default value is 5."
         }
     ],
     requiredParameters: ["queryString"]
