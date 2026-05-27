@@ -18,6 +18,7 @@ import humanFileSize from "helpers/humanFileSize";
 import { getUrlWithPopUpQueryString } from "helpers/popupUtils";
 import { toggleIsOpen } from "actions/sqlConsoleActions";
 import { config } from "../../../config";
+import queryIcon from "assets/query.svg";
 
 export type PropType = {
     dataset: Dataset;
@@ -209,12 +210,12 @@ class DistributionRow extends Component<PropType> {
                     {config.enableSQLConsole && distribution.downloadURL && (
                         <span className="no-print">
                             <button
-                                className="au-btn au-btn--secondary"
+                                className="download-button au-btn au-btn--secondary"
                                 onClick={() =>
                                     this.props.dispatch(toggleIsOpen())
                                 }
                             >
-                                Query this data
+                                <img src={queryIcon} alt="query" /> Query
                             </button>
                         </span>
                     )}
