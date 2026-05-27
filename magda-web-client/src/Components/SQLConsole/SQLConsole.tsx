@@ -93,7 +93,7 @@ const SQLConsole: FunctionComponent<PropsType> = (props) => {
     const [size, setSize] = useState<string>("sm");
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [isDownloadingCsv, setIsDownloadingCsv] = useState<boolean>(false);
-    const [nlModeEnabled, setNlModeEnabled] = useState<boolean>(false);
+    const [nlModeEnabled, setNlModeEnabled] = useState<boolean>(true);
     const aceEditorRef = aceEditorCtlRef?.editor;
 
     const onRunQuery = useCallback(
@@ -190,26 +190,24 @@ const SQLConsole: FunctionComponent<PropsType> = (props) => {
         }
     }, [data, setIsDownloadingCsv]);
 
-    const {
-        result: AceEditor,
-        loading: loadingAceEditor
-    } = useAsync(async () => {
-        try {
-            const [{ default: AceEditor }] = await Promise.all([
-                import(/* webpackChunkName:'react-ace' */ "react-ace"),
-                import(
-                    /* webpackChunkName:'react-ace' */ "ace-builds/src-noconflict/mode-sql"
-                ),
-                import(
-                    /* webpackChunkName:'react-ace' */ "ace-builds/src-noconflict/theme-xcode"
-                )
-            ]);
-            return AceEditor;
-        } catch (e) {
-            reportError(`Failed to load JSON editor: ${e}`);
-            return;
-        }
-    }, []);
+    const { result: AceEditor, loading: loadingAceEditor } =
+        useAsync(async () => {
+            try {
+                const [{ default: AceEditor }] = await Promise.all([
+                    import(/* webpackChunkName:'react-ace' */ "react-ace"),
+                    import(
+                        /* webpackChunkName:'react-ace' */ "ace-builds/src-noconflict/mode-sql"
+                    ),
+                    import(
+                        /* webpackChunkName:'react-ace' */ "ace-builds/src-noconflict/theme-xcode"
+                    )
+                ]);
+                return AceEditor;
+            } catch (e) {
+                reportError(`Failed to load JSON editor: ${e}`);
+                return;
+            }
+        }, []);
 
     const makeDrawerHeader = useCallback(
         (screeSize: "sm" | undefined) =>
@@ -392,9 +390,10 @@ const SQLConsole: FunctionComponent<PropsType> = (props) => {
                                             style={{ padding: 4 }}
                                         >
                                             {(rowData) => {
-                                                const convertedContent = convertCellData(
-                                                    rowData[key]
-                                                );
+                                                const convertedContent =
+                                                    convertCellData(
+                                                        rowData[key]
+                                                    );
                                                 if (
                                                     typeof convertedContent ===
                                                         "string" &&

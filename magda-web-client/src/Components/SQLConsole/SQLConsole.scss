@@ -20,6 +20,20 @@
             display: inline-block;
             vertical-align: middle;
         }
+        .rs-radio-group {
+            .rs-radio {
+                .rs-radio-checker {
+                    padding-left: 0;
+                    label {
+                        padding-left: 12px;
+                        padding-right: 12px;
+                    }
+                }
+                .rs-radio-wrapper {
+                    display: none;
+                }
+            }
+        }
     }
     .rs-drawer-body {
         padding: 10px 10px 0px 10px;

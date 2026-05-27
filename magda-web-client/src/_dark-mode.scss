@@ -280,6 +280,152 @@ $dark-shadow: rgba(0, 0, 0, 0.4) !default;
         color: var(--magda-text) !important;
     }
 
+    // Buttons
+    .au-btn.au-btn--primary {
+        background-color: var(--magda-action) !important;
+        color: #fff !important;
+        border-color: var(--magda-action) !important;
+
+        &:hover,
+        &:focus {
+            background-color: var(--magda-action-hover) !important;
+            border-color: var(--magda-action-hover) !important;
+        }
+    }
+
+    .au-btn.au-btn--secondary {
+        background-color: transparent !important;
+        color: var(--magda-action) !important;
+        border-color: var(--magda-action) !important;
+
+        &:hover,
+        &:focus {
+            background-color: var(--magda-action) !important;
+            color: #fff !important;
+        }
+    }
+
+    // SQL Console / Ace Editor
+    .magda-sql-console-drawer {
+        .rs-drawer-content {
+            background-color: var(--magda-bg-elevated) !important;
+            color: var(--magda-text) !important;
+        }
+
+        .rs-drawer-header {
+            border-bottom-color: var(--magda-border) !important;
+
+            .rs-drawer-title {
+                color: var(--magda-text) !important;
+            }
+        }
+
+        .rs-panel {
+            background-color: var(--magda-bg-elevated) !important;
+            border-color: var(--magda-border) !important;
+            color: var(--magda-text) !important;
+        }
+
+        .rs-radio-group {
+            background-color: var(--magda-input-bg) !important;
+            border-color: var(--magda-input-border) !important;
+            color: var(--magda-text) !important;
+
+            .rs-radio-checker label {
+                color: var(--magda-text) !important;
+            }
+        }
+
+        .ace_editor,
+        .ace_editor .ace_content,
+        .ace_editor .ace_gutter {
+            background-color: var(--magda-input-bg) !important;
+            color: var(--magda-text) !important;
+        }
+
+        .ace_editor .ace_cursor {
+            color: var(--magda-text) !important;
+        }
+
+        .ace_editor .ace_marker-layer .ace_active-line {
+            background-color: rgba(255, 255, 255, 0.05) !important;
+        }
+
+        .mode-tab-switcher {
+            border-bottom-color: var(--magda-border) !important;
+
+            .mode-tab {
+                color: var(--magda-text-muted) !important;
+
+                &:hover {
+                    color: var(--magda-action) !important;
+                }
+
+                &.active {
+                    color: var(--magda-action) !important;
+                    border-bottom-color: var(--magda-action) !important;
+                }
+            }
+        }
+
+        .rs-table {
+            background-color: var(--magda-bg-elevated) !important;
+            color: var(--magda-text) !important;
+            border-color: var(--magda-border) !important;
+
+            .rs-table-cell {
+                background-color: var(--magda-bg-elevated) !important;
+                color: var(--magda-text) !important;
+                border-color: var(--magda-border) !important;
+            }
+
+            .rs-table-cell-header .rs-table-cell-content {
+                background-color: var(--magda-bg-alt) !important;
+                color: var(--magda-text) !important;
+            }
+
+            .rs-table-row {
+                border-color: var(--magda-border) !important;
+            }
+        }
+
+        .nl-query-input {
+            background-color: var(--magda-input-bg) !important;
+            border-color: var(--magda-input-border) !important;
+            color: var(--magda-text) !important;
+        }
+    }
+
+    // RSuite radio group (Size selector)
+    .rs-radio-group {
+        border-color: var(--magda-input-border) !important;
+
+        .rs-radio-checker label {
+            color: var(--magda-text) !important;
+        }
+    }
+
+    // General text color fixes
+    .dataset-page,
+    .distribution-page {
+        color: var(--magda-text) !important;
+
+        h1,
+        h2,
+        h3,
+        h4,
+        h5,
+        h6,
+        p,
+        span,
+        li,
+        td,
+        th,
+        label {
+            color: var(--magda-text) !important;
+        }
+    }
+
     // Scrollbar styling
     * {
         scrollbar-color: var(--magda-border) var(--magda-bg);
