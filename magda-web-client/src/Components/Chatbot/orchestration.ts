@@ -1,7 +1,7 @@
 import type { ChainInput } from "./commons";
 import type { WebLLMTool } from "./ChatWebLLM";
 
-export const MAX_TOOL_STEPS = 8;
+export const MAX_TOOL_STEPS = 80;
 export const MAX_CONSECUTIVE_SAME_TOOL_CALLS = 2;
 const MAX_SERIALIZED_TOOL_RESULT_CHARS = 1800;
 
