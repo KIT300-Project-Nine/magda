@@ -4,6 +4,7 @@ import { markdownTable } from "markdown-table";
 import { config } from "../../../config";
 import { ChainInput } from "../commons";
 import { WebLLMTool } from "../ChatWebLLM";
+import { isRestrictedDataset } from "constants/restrictedDatasets";
 
 const MAX_DESC_DISPLAY_LENGTH = 250;
 const { uiBaseUrl } = config;
@@ -28,12 +29,18 @@ async function retrieveDatasets(question: string, limit: number = 5) {
     }
 
     // Show real results only if we have reasonably good matches
-    const datasets = result.dataSets.map((item) => {
-        const desc = (
-            item?.description?.length > MAX_DESC_DISPLAY_LENGTH
-                ? item.description.substring(0, MAX_DESC_DISPLAY_LENGTH + 1) +
-                  "..."
-                : item.description
+    const filteredDataSets = result.dataSets.filter(
+        (item) => !isRestrictedDataset(item.identifier, item.publisher?.name)
+    );
+
+    if (!filteredDataSets.length) {
+        return "The requested record is not available or you may not have access, please check that you are signed in.";
+    }
+
+    const datasets = filteredDataSets.map((item) => {
+        const desc = (item?.description?.length > MAX_DESC_DISPLAY_LENGTH
+            ? item.description.substring(0, MAX_DESC_DISPLAY_LENGTH + 1) + "..."
+            : item.description
         ).replace(/\n|\r|<br\s*\/>/g, " ");
 
         const datasetId = encodeURIComponent(
@@ -55,7 +62,7 @@ async function retrieveDatasets(question: string, limit: number = 5) {
 const searchDatasets: WebLLMTool = {
     name: "searchDatasets",
     func: async function (queryString: string) {
-        const context = this as unknown as ChainInput;
+        const context = (this as unknown) as ChainInput;
         const { queue } = context;
         queue.push(createChatEventMessageCompleteMsg("Searching datasets..."));
 
@@ -63,7 +70,10 @@ const searchDatasets: WebLLMTool = {
         const result = await searchDatasetsApi({ q: queryString });
 
         // store datasets for future tools
-        context.keyContextData.searchResults = result?.dataSets || [];
+        context.keyContextData.searchResults = (result?.dataSets || []).filter(
+            (item) =>
+                !isRestrictedDataset(item.identifier, item.publisher?.name)
+        );
         context.keyContextData.selectedDataset = undefined;
         context.keyContextData.datasetSchema = undefined;
         context.keyContextData.datasetSchemaReady = false;
