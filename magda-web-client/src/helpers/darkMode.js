@@ -6,10 +6,10 @@ const lightThemeColor = themeColorMeta?.getAttribute("content") || "#320e3b";
 function applyTheme(isDark) {
     const body = document.body;
     if (isDark) {
-        body.classList.add("au-body--dark", "rs-theme-dark");
+        body.classList.add("rs-theme-dark");
         body.classList.remove("rs-theme-light");
     } else {
-        body.classList.remove("au-body--dark", "rs-theme-dark");
+        body.classList.remove("rs-theme-dark");
         body.classList.add("rs-theme-light");
     }
     themeColorMeta?.setAttribute(
