@@ -60,6 +60,9 @@ export function filterAvailableTools(
         if (tool.name === "executeSQLQuery") {
             return canExecuteSQL;
         }
+        if (tool.name === "renderGeospatialMap") {
+            return hasQueryResult;
+        }
         return true;
     });
 }
