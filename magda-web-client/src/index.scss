@@ -1,4 +1,5 @@
 @import "variables";
+@import "dark-mode";
 @import "./pancake/sass/pancake.scss";
 
 body {
@@ -153,7 +154,7 @@ h4 {
 }
 
 .au-link {
-    background: #ffffff;
+    background: var(--magda-bg, #ffffff);
 }
 
 .au-skip-link__link {
