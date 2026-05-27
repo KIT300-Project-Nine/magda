@@ -1,13 +1,15 @@
 import React from "react";
+import { connect } from "react-redux";
 import Modal from "react-modal";
 import { config } from "../../../config";
 import RequestFormLogic from "Components/Dataset/Suggest/RequestFormLogic";
+import { toggleIsOpen } from "actions/sqlConsoleActions";
 
 import "./DatasetPageSuggestForm.scss";
 
 //This is the question/report on a dataset form on the
 //individual dataset page
-export default class DatasetPageSuggestForm extends React.Component {
+class DatasetPageSuggestForm extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
@@ -131,6 +133,17 @@ export default class DatasetPageSuggestForm extends React.Component {
                     </button>
                 </div>
 
+                {config.enableSQLConsole && (
+                    <div className="dataset-button-container no-print">
+                        <button
+                            className="au-btn au-btn--secondary ask-question-button"
+                            onClick={() => this.props.dispatch(toggleIsOpen())}
+                        >
+                            Query this data
+                        </button>
+                    </div>
+                )}
+
                 <React.Fragment>
                     <Modal
                         isOpen={this.state.showSuggest}
@@ -172,3 +185,5 @@ export default class DatasetPageSuggestForm extends React.Component {
         );
     }
 }
+
+export default connect()(DatasetPageSuggestForm);

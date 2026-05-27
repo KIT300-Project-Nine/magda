@@ -1,5 +1,5 @@
-// Dark mode color overrides — all customizable via scss-compiler SCSS_VARS
-// Override these by setting the corresponding SCSS variable in your SCSS_VARS JSON:
+// Dark mode — triggered automatically by OS preference.
+// All colors are customizable via scss-compiler SCSS_VARS at deploy time:
 //   "dark-bg": "#1a1d24"
 //   "dark-text": "#f0f0f0"
 //   etc.
@@ -16,32 +16,11 @@ $dark-border: #3c3f43 !default;
 $dark-input-bg: #292d33 !default;
 $dark-input-border: #5c6066 !default;
 $dark-card-bg: #292d33 !default;
-$dark-header-bg: darken($magda-color-primary, 10%) !default;
+$dark-header-bg: darken($magda-color-primary, 5%) !default;
 $dark-header-text: #f7f7f7 !default;
 $dark-header-border: lighten($magda-color-primary, 10%) !default;
-$dark-footer-bg: darken($magda-color-primary, 15%) !default;
+$dark-footer-bg: darken($magda-color-primary, 8%) !default;
 $dark-shadow: rgba(0, 0, 0, 0.4) !default;
-
-:root {
-    --magda-bg: #{$AU-color-background};
-    --magda-bg-elevated: #ffffff;
-    --magda-bg-alt: #{$AU-color-preview};
-    --magda-text: #{$AU-color-foreground-text};
-    --magda-text-muted: #6a6f76;
-    --magda-action: #{$AU-color-foreground-action};
-    --magda-action-hover: #{$AU-color-foreground-focus};
-    --magda-focus-bg: #{$header-color-focus-background};
-    --magda-border: #d9d9d9;
-    --magda-input-bg: #ffffff;
-    --magda-input-border: #{$AU-color-foreground-action};
-    --magda-card-bg: #ffffff;
-    --magda-header-bg: #{$header-color-background};
-    --magda-header-text: #{$header-color-text};
-    --magda-header-border: #{$header-color-border};
-    --magda-footer-bg: #{$footer-color-background};
-    --magda-footer-text: #{$footer-color-text};
-    --magda-shadow: rgba(0, 0, 0, 0.16);
-}
 
 @media (prefers-color-scheme: dark) {
     :root {
@@ -63,24 +42,24 @@ $dark-shadow: rgba(0, 0, 0, 0.4) !default;
         --magda-footer-bg: #{$dark-footer-bg};
         --magda-footer-text: #{$AU-colordark-foreground-text};
         --magda-shadow: #{$dark-shadow};
+        color-scheme: dark;
     }
 
-    // Body & page background
     body.au-body {
-        background-color: var(--magda-bg);
-        color: var(--magda-text);
+        background-color: var(--magda-bg) !important;
+        color: var(--magda-text) !important;
 
         a {
-            color: var(--magda-action);
+            color: var(--magda-action) !important;
 
             &:hover {
-                color: var(--magda-action-hover);
+                color: var(--magda-action-hover) !important;
             }
         }
 
         ::selection {
-            color: var(--magda-bg);
-            background-color: var(--magda-action);
+            color: var(--magda-bg) !important;
+            background-color: var(--magda-action) !important;
         }
     }
 
@@ -90,7 +69,7 @@ $dark-shadow: rgba(0, 0, 0, 0.4) !default;
     }
 
     .header {
-        border-bottom-color: var(--magda-header-border);
+        border-bottom-color: var(--magda-header-border) !important;
     }
 
     .navigation .au-link-list > li {
@@ -106,10 +85,10 @@ $dark-shadow: rgba(0, 0, 0, 0.4) !default;
     }
 
     .mobile-nav {
-        background: var(--magda-bg-elevated);
+        background: var(--magda-bg-elevated) !important;
 
         li {
-            border-bottom-color: var(--magda-border);
+            border-bottom-color: var(--magda-border) !important;
         }
 
         .navigation li a {
@@ -142,12 +121,11 @@ $dark-shadow: rgba(0, 0, 0, 0.4) !default;
     }
 
     // Cards & elevated surfaces
-    .au-body .au-body--alt,
     .au-card,
     .overview-box,
     .tab-collections-body {
-        background-color: var(--magda-card-bg);
-        border-color: var(--magda-border);
+        background-color: var(--magda-card-bg) !important;
+        border-color: var(--magda-border) !important;
     }
 
     // Inputs
@@ -165,11 +143,12 @@ $dark-shadow: rgba(0, 0, 0, 0.4) !default;
     }
 
     // Search box
-    .search-box {
-        .au-text-input,
-        .au-text-input--block {
-            background: var(--magda-input-bg) !important;
-            color: var(--magda-text) !important;
+    .search-box__input {
+        background: var(--magda-input-bg) !important;
+        color: var(--magda-text) !important;
+
+        &::placeholder {
+            color: var(--magda-text-muted) !important;
         }
     }
 
@@ -190,11 +169,11 @@ $dark-shadow: rgba(0, 0, 0, 0.4) !default;
         border-color: var(--magda-border) !important;
     }
 
-    // Pagination & lists
+    // Pagination
     .pagination {
         a,
         span {
-            color: var(--magda-action);
+            color: var(--magda-action) !important;
         }
     }
 
@@ -202,12 +181,12 @@ $dark-shadow: rgba(0, 0, 0, 0.4) !default;
     .dataset-summery,
     .dataset-page,
     .distribution-row {
-        border-color: var(--magda-border);
+        border-color: var(--magda-border) !important;
     }
 
     // Breadcrumbs
     .au-breadcrumbs {
-        color: var(--magda-text-muted);
+        color: var(--magda-text-muted) !important;
 
         a {
             color: var(--magda-action) !important;
@@ -216,20 +195,20 @@ $dark-shadow: rgba(0, 0, 0, 0.4) !default;
 
     // Page alerts
     .au-page-alerts {
-        border-color: var(--magda-border);
-        background-color: var(--magda-bg-elevated);
+        border-color: var(--magda-border) !important;
+        background-color: var(--magda-bg-elevated) !important;
     }
 
     // Tab navigation
     .tab-navigation a {
-        border-bottom-color: var(--magda-border);
-        color: var(--magda-text);
+        border-bottom-color: var(--magda-border) !important;
+        color: var(--magda-text) !important;
 
         &:hover,
         &:focus,
         &.mainmenu--active {
-            color: var(--magda-action);
-            border-color: var(--magda-action);
+            color: var(--magda-action) !important;
+            border-color: var(--magda-action) !important;
         }
     }
 
@@ -242,35 +221,28 @@ $dark-shadow: rgba(0, 0, 0, 0.4) !default;
         }
 
         .tab-collections-body {
-            border-color: var(--magda-border);
-            background-color: var(--magda-bg-elevated);
+            border-color: var(--magda-border) !important;
+            background-color: var(--magda-bg-elevated) !important;
         }
     }
 
     // Home page
     .homepage-app-container {
         .homepage-tagline .homepage-tagline-inner {
-            color: #fff;
+            color: #fff !important;
         }
     }
 
     // Notification
     .notification {
-        background-color: var(--magda-bg-elevated);
-        border-color: var(--magda-border);
-        color: var(--magda-text);
-    }
-
-    // Organisation & preview boxes
-    .overview-box {
-        background-color: var(--magda-card-bg);
-        border-color: var(--magda-border);
-        color: var(--magda-text);
+        background-color: var(--magda-bg-elevated) !important;
+        border-color: var(--magda-border) !important;
+        color: var(--magda-text) !important;
     }
 
     // Link buttons
     .link-button {
-        color: var(--magda-action);
+        color: var(--magda-action) !important;
     }
 
     // Skip links
@@ -281,29 +253,34 @@ $dark-shadow: rgba(0, 0, 0, 0.4) !default;
     // Modals
     .ReactModal__Content {
         background-color: var(--magda-bg-elevated) !important;
-        color: var(--magda-text);
+        color: var(--magda-text) !important;
     }
 
     // Horizontal rules
     hr {
-        border-top-color: var(--magda-border);
+        border-top-color: var(--magda-border) !important;
     }
 
-    // Selection
-    .au-body ::selection {
-        background: var(--magda-action) !important;
-        color: var(--magda-bg) !important;
+    // Au-link background
+    .au-link {
+        background: var(--magda-bg) !important;
     }
 
     // Code blocks
     kbd,
     code,
     samp {
-        background-color: var(--magda-bg-alt);
-        color: var(--magda-text);
+        background-color: var(--magda-bg-alt) !important;
+        color: var(--magda-text) !important;
     }
 
-    // Scrollbar styling for dark mode
+    // Existing au-body--dark section override (prevent double-dark application)
+    .au-body.au-body--dark {
+        background: var(--magda-bg) !important;
+        color: var(--magda-text) !important;
+    }
+
+    // Scrollbar styling
     * {
         scrollbar-color: var(--magda-border) var(--magda-bg);
     }

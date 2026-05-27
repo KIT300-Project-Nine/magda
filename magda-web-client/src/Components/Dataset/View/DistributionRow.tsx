@@ -16,11 +16,14 @@ import { licenseLevel } from "constants/DatasetConstants";
 import getStorageApiResourceAccessUrl from "helpers/getStorageApiResourceAccessUrl";
 import humanFileSize from "helpers/humanFileSize";
 import { getUrlWithPopUpQueryString } from "helpers/popupUtils";
+import { toggleIsOpen } from "actions/sqlConsoleActions";
+import { config } from "../../../config";
 
 export type PropType = {
     dataset: Dataset;
     distribution: ParsedDistribution;
     searchText: string;
+    dispatch: any;
 };
 
 class DistributionRow extends Component<PropType> {
@@ -187,8 +190,8 @@ class DistributionRow extends Component<PropType> {
                                             gapi.event({
                                                 category:
                                                     "Download by Publisher",
-                                                action:
-                                                    dataset?.publisher?.name,
+                                                action: dataset?.publisher
+                                                    ?.name,
                                                 label: resource_url
                                             });
                                         }
@@ -201,6 +204,18 @@ class DistributionRow extends Component<PropType> {
                             <span className="block print-only">
                                 Download: {runtimeDownloadUrl}
                             </span>
+                        </span>
+                    )}{" "}
+                    {config.enableSQLConsole && distribution.downloadURL && (
+                        <span className="no-print">
+                            <button
+                                className="au-btn au-btn--secondary"
+                                onClick={() =>
+                                    this.props.dispatch(toggleIsOpen())
+                                }
+                            >
+                                Query this data
+                            </button>
                         </span>
                     )}
                 </div>
