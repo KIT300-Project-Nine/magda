@@ -4,8 +4,19 @@
         "outDir": "./dist",
         "strictNullChecks": false,
         "rootDir": "./src",
-        "tsBuildInfoFile": "./tsconfig.tsbuildinfo"
+        "tsBuildInfoFile": "./tsconfig.tsbuildinfo",
+        "baseUrl": ".",
+        "paths": {
+            "magda-typescript-common/src/*": [
+                "../magda-typescript-common/dist/*"
+            ]
+        }
     },
-    "references": [{ "path": "../magda-typescript-common" }],
-    "include": ["./src", "./src/**/*.json"]
+    "references": [
+        {
+            "path": "../magda-typescript-common"
+        }
+    ],
+    "include": ["./src", "./src/**/*.json"],
+    "exclude": ["src/test/**/*", "src/**/*.spec.ts", "src/**/*.test.ts"]
 }

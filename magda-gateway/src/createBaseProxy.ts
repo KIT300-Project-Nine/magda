@@ -1,6 +1,6 @@
 import httpProxy from "http-proxy";
 import express from "express";
-import { IncomingHttpHeaders } from "http";
+import { IncomingHttpHeaders, ServerResponse } from "http";
 import getNoCacheHeaders from "magda-typescript-common/src/express/getNoCacheHeaders.js";
 import groupBy from "lodash/groupBy.js";
 
@@ -104,7 +104,9 @@ export default function createBaseProxy(
     proxy.on("error", function (err, req, res) {
         console.error(err);
         try {
-            res.writeHead(500, {
+            // http-proxy types `res` as ServerResponse | Socket; for request
+            // (non-WebSocket) errors it is always a ServerResponse.
+            (res as ServerResponse).writeHead(500, {
                 "Content-Type": "text/plain"
             });
         } catch (e) {

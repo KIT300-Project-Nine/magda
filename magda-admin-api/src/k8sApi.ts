@@ -5,7 +5,6 @@ import ServerError from "magda-typescript-common/src/ServerError.js";
 import _ from "lodash";
 import connectorObjName from "./connectorObjName.js";
 import buildConnectorCronJobManifest from "./buildConnectorCronJobManifest.js";
-import { PromiseMiddlewareWrapper } from "@kubernetes/client-node/dist/gen/middleware.js";
 
 export interface Connector extends JsonConnectorConfig {
     cronJob: k8s.V1CronJob;
@@ -30,16 +29,13 @@ function getConnectorConfigMapNameFromCronJob(cronJob: k8s.V1CronJob): string {
     return null;
 }
 
-const mergePatchOpts = {
-    middleware: [
-        new PromiseMiddlewareWrapper(
-            k8s.setHeaderMiddleware(
-                "Content-Type",
-                k8s.PatchStrategy.MergePatch
-            )[0]
-        )
-    ]
-};
+// @kubernetes/client-node v1.x sets the patch Content-Type via setHeaderOptions,
+// which returns the ConfigurationOptions consumed by the patch* API calls.
+// (Earlier versions returned an array of middleware here, hence the old `[0]`.)
+const mergePatchOpts = k8s.setHeaderOptions(
+    "Content-Type",
+    k8s.PatchStrategy.MergePatch
+);
 
 export default class K8SApi {
     public batchApi: k8s.BatchV1Api;

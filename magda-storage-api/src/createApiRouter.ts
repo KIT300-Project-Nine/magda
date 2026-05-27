@@ -1,7 +1,7 @@
 import express, { Request, Response } from "express";
-import { require } from "@magda/esm-utils";
+import multer from "multer";
+import bytes from "bytes";
 import MagdaMinioClient from "./MagdaMinioClient.js";
-const { fileParser } = require("express-multipart-file-parser");
 import { getUserId } from "magda-typescript-common/src/authorization-api/authMiddleware.js";
 import AuthorizedRegistryClient from "magda-typescript-common/src/registry/AuthorizedRegistryClient.js";
 import AuthDecisionQueryClient from "magda-typescript-common/src/opa/AuthDecisionQueryClient.js";
@@ -23,19 +23,22 @@ export interface ApiRouterOptions {
     defaultBuckets: string[];
 }
 
-interface FileRequest extends Request {
-    files?: {
-        fieldname: string;
-        originalname: string;
-        encoding: string;
-        mimetype: string;
-        buffer: Buffer;
-    }[];
+// `upload.any()` always populates req.files with an array; this narrows
+// multer's `File[] | { [field]: File[] }` union type to the array form.
+function getUploadedFiles(req: Request): Express.Multer.File[] {
+    return Array.isArray(req.files) ? req.files : [];
 }
 
 export default function createApiRouter(options: ApiRouterOptions) {
     const router: express.Router = express.Router();
     let hasDefaultBucketsCreated = false;
+
+    // Parse multipart file uploads into memory (replaces express-multipart-file-parser).
+    // `uploadLimit` is a human-readable string (e.g. "100mb"); multer expects a byte count.
+    const upload = multer({
+        storage: multer.memoryStorage(),
+        limits: { fileSize: bytes.parse(options.uploadLimit) ?? undefined }
+    });
 
     async function initialization() {
         try {
@@ -273,7 +276,7 @@ export default function createApiRouter(options: ApiRouterOptions) {
     router.post(
         "/upload/:bucket*",
         getUserId(options.jwtSecret),
-        fileParser({ rawBodyOptions: { limit: options.uploadLimit } }),
+        upload.any(),
         requireStorageObjectPermission(
             options.authDecisionClient,
             options.registryClient,
@@ -282,8 +285,9 @@ export default function createApiRouter(options: ApiRouterOptions) {
             // retrieve bucket name
             async (req: Request, res: Response) => req?.params?.bucket,
             // retrieve object id / path
-            async (req: FileRequest, res: Response) => {
-                if (!req?.files?.length) {
+            async (req: Request, res: Response) => {
+                const files = getUploadedFiles(req);
+                if (!files.length) {
                     throw new ServerError(
                         "Cannot locate any files in request body",
                         400
@@ -297,7 +301,7 @@ export default function createApiRouter(options: ApiRouterOptions) {
                     ? pathNoLeadingSlash.slice(pathNoLeadingSlash.length - 1)
                     : pathNoLeadingSlash;
 
-                const file = req.files[0];
+                const file = files[0];
 
                 const fileid = file.originalname;
                 const fullPath = path !== "" ? path + "/" + fileid : fileid;
@@ -314,20 +318,21 @@ export default function createApiRouter(options: ApiRouterOptions) {
                 return fullPath;
             },
             // create auth decision context data
-            async (req: FileRequest, res: Response) => {
-                if (!req?.files?.length) {
+            async (req: Request, res: Response) => {
+                const files = getUploadedFiles(req);
+                if (!files.length) {
                     throw new ServerError(
                         "Cannot locate any files in request body",
                         400
                     );
                 }
-                if (req.files.length > 1) {
+                if (files.length > 1) {
                     throw new ServerError(
                         "Only one file is allowed to be upload for one API call",
                         400
                     );
                 }
-                const file = req.files[0];
+                const file = files[0];
                 const metaData: StorageObjectMetaData = {
                     recordId: req?.query?.recordId as string,
                     contentType: file.mimetype,
@@ -339,7 +344,7 @@ export default function createApiRouter(options: ApiRouterOptions) {
                 return metaData;
             }
         ),
-        async (req: FileRequest, res: Response) => {
+        async (req: Request, res: Response) => {
             try {
                 const recordId =
                     req.query.recordId &&
@@ -348,7 +353,7 @@ export default function createApiRouter(options: ApiRouterOptions) {
                 const bucket = req.params.bucket;
                 const encodeBucketname = encodeURIComponent(bucket);
 
-                const file = req.files[0];
+                const file = getUploadedFiles(req)[0];
                 const metaData: any = {
                     "Content-Type": file.mimetype,
                     "Content-Length": file.buffer.length

@@ -1,5 +1,8 @@
-import { Cancelable } from "lodash";
 import throttle from "lodash/throttle.js";
+
+// Newer @types/lodash removed the `Cancelable` interface; a throttled function
+// exposes these two control methods.
+type Cancelable = { cancel(): void; flush(): void };
 import { Tenant } from "magda-typescript-common/src/tenant-api/Tenant.js";
 import AuthorizedTenantClient from "magda-typescript-common/src/tenant-api/AuthorizedTenantClient.js";
 

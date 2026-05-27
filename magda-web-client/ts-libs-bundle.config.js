@@ -27,7 +27,7 @@ module.exports = {
                 use: {
                     loader: "ts-loader",
                     options: {
-                        transpileOnly: false, // Ensures TypeScript emits output
+                        transpileOnly: true,
                         compilerOptions: {
                             noEmit: false,
                             declaration: false

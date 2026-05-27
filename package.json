@@ -21,7 +21,7 @@
     "@types/node": "^22.0.0",
     "glob": "^7.1.2",
     "husky": "^3.1.0",
-    "lerna": "^3.20.2",
+    "lerna": "^9.0.7",
     "lodash": "^4.17.5",
     "prettier": "^2.0.5",
     "pretty-quick": "^2.0.1",
@@ -58,5 +58,27 @@
       "pre-commit": "pretty-quick --staged"
     }
   },
-  "dependencies": {}
+  "dependencies": {},
+  "resolutions": {
+    "braces": "3.0.3",
+    "**/nx/brace-expansion": "5.0.6",
+    "**/nx/yaml": "2.9.0",
+    "cross-spawn": "7.0.6",
+    "@types/express": "4.17.25",
+    "form-data": "2.5.5",
+    "http-cache-semantics": "4.2.0",
+    "jsonwebtoken": "9.0.3",
+    "lodash": "4.18.1",
+    "markdown-it": "14.2.0",
+    "micromatch": "4.0.8",
+    "parse-path": "7.1.0",
+    "parse-url": "11.1.0",
+    "qs": "6.15.2",
+    "tar": "7.5.15",
+    "tar-fs": "2.1.4",
+    "tmp": "0.2.4",
+    "tough-cookie": "4.1.4",
+    "trim-newlines": "3.0.1",
+    "uuid": "11.1.1"
+  }
 }

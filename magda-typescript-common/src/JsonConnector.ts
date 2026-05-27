@@ -8,7 +8,8 @@ import JsonTransformer from "./JsonTransformer.js";
 import Registry from "./registry/AuthorizedRegistryClient.js";
 import unionToThrowable from "./util/unionToThrowable.js";
 import yargs from "yargs";
-const { parse: parseArgv } = yargs;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const parseArgv = (yargs as any).parse.bind(yargs);
 
 import express from "express";
 import * as fs from "fs";

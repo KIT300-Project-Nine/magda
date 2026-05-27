@@ -801,7 +801,11 @@ export default class ServiceRunner {
             const pullStreams: Readable[] = [];
             if (typeof imageOrDockerComposeObj === "string") {
                 pullStreams.push(
-                    await this.docker.pull(imageOrDockerComposeObj)
+                    // dockerode's typings return a web ReadableStream here; at
+                    // runtime it is a Node Readable, which is what we consume.
+                    ((await this.docker.pull(
+                        imageOrDockerComposeObj
+                    )) as unknown) as Readable
                 );
             } else {
                 pullStreams.splice(
