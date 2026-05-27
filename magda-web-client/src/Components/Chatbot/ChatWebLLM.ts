@@ -113,7 +113,6 @@ export const defaultContextWindowSize = defaultContextWindowSizeOption?.value
 
 const DEFAULT_MODEL_CONFIG: WebLLMInputs = {
     model: "Qwen3-4B-q4f16_1-MLC",
-    model: "Qwen3-4B-q4f16_1-MLC",
     chatOptions: {
         temperature: 0,
         context_window_size: defaultContextWindowSize
@@ -126,9 +125,8 @@ export default class ChatWebLLM extends SimpleChatModel<WebLLMCallOptions> {
     static inputs: WebLLMInputs;
 
     protected engine: ServiceWorkerMLCEngine | null = null;
-    protected enginePromise: Promise<ServiceWorkerMLCEngine | null> = Promise.resolve(
-        null
-    );
+    protected enginePromise: Promise<ServiceWorkerMLCEngine | null> =
+        Promise.resolve(null);
 
     config: ExtensionMLCEngineConfig;
 
@@ -393,9 +391,9 @@ MULTI-STEP EXECUTION RULES:
                       }
                   ]
                 : Array.isArray(userMessage)
-                ? ((userMessage as unknown) as webllm.ChatCompletion[])
+                ? (userMessage as unknown as webllm.ChatCompletion[])
                 : [
-                      (userMessage as unknown) as webllm.ChatCompletionAssistantMessageParam
+                      userMessage as unknown as webllm.ChatCompletionAssistantMessageParam
                   ];
 
         // Filter out any existing system messages to ensure magdaIdentity is the only one and is first
@@ -455,9 +453,8 @@ MULTI-STEP EXECUTION RULES:
                 `Invalid LLM response: Cannot locate tool with name: ${funcName}`
             );
         }
-        const funcArgs = (toolCalled?.parameters?.length
-            ? toolCalled.parameters
-            : []
+        const funcArgs = (
+            toolCalled?.parameters?.length ? toolCalled.parameters : []
         ).map((item) => funcArgsObj?.[item.name]);
         const result = await toolCalled.func.call(thisObj, ...funcArgs);
         return {

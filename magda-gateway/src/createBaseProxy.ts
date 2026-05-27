@@ -1,6 +1,6 @@
 import httpProxy from "http-proxy";
 import express from "express";
-import { IncomingHttpHeaders } from "http";
+import { IncomingHttpHeaders, ServerResponse } from "http";
 import getNoCacheHeaders from "magda-typescript-common/src/express/getNoCacheHeaders.js";
 import groupBy from "lodash/groupBy.js";
 
@@ -104,7 +104,9 @@ export default function createBaseProxy(
     proxy.on("error", function (err, req, res) {
         console.error(err);
         try {
-            res.writeHead(500, {
+            // http-proxy types `res` as ServerResponse | Socket; for request
+            // (non-WebSocket) errors it is always a ServerResponse.
+            (res as ServerResponse).writeHead(500, {
                 "Content-Type": "text/plain"
             });
         } catch (e) {
@@ -159,9 +161,11 @@ export default function createBaseProxy(
             // when incoming request specifically ask for a no-cache response
             // we set the following header to make sure not only CDN will not cache it but also web browser will not cache it
             const noCacheHeaders = getNoCacheHeaders();
-            (Object.keys(noCacheHeaders) as Array<
-                keyof typeof noCacheHeaders
-            >).forEach((headerName) =>
+            (
+                Object.keys(noCacheHeaders) as Array<
+                    keyof typeof noCacheHeaders
+                >
+            ).forEach((headerName) =>
                 setHeaderValue(
                     proxyRes.headers,
                     headerName,
@@ -208,9 +212,10 @@ export default function createBaseProxy(
                     MAGDA_ADMIN_PORTAL_ID
                 );
             } else {
-                const tenant = options.tenantMode.tenantsLoader.tenantsTable.get(
-                    domainName
-                );
+                const tenant =
+                    options.tenantMode.tenantsLoader.tenantsTable.get(
+                        domainName
+                    );
 
                 if (tenant !== undefined) {
                     proxyReq.setHeader(MAGDA_TENANT_ID_HEADER, tenant.id);

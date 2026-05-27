@@ -8,7 +8,8 @@ import JsonTransformer from "./JsonTransformer.js";
 import Registry from "./registry/AuthorizedRegistryClient.js";
 import unionToThrowable from "./util/unionToThrowable.js";
 import yargs from "yargs";
-const { parse: parseArgv } = yargs;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const parseArgv = (yargs as any).parse.bind(yargs);
 
 import express from "express";
 import * as fs from "fs";
@@ -82,10 +83,12 @@ export default class JsonConnector {
                         configData.extras = this.source.extras;
                     }
                     if (this.source.presetRecordAspects) {
-                        configData.presetRecordAspects = this.source.presetRecordAspects;
+                        configData.presetRecordAspects =
+                            this.source.presetRecordAspects;
                     }
                     if (this.source?.customJsFilterCode) {
-                        configData.customJsFilterCode = this.source?.customJsFilterCode;
+                        configData.customJsFilterCode =
+                            this.source?.customJsFilterCode;
                     }
                 } else {
                     configData = {
@@ -93,13 +96,16 @@ export default class JsonConnector {
                         name: argv.name as string
                     };
                     if (argv.extras) {
-                        configData.extras = argv.extras as JsonConnectorConfigExtraMetaData;
+                        configData.extras =
+                            argv.extras as JsonConnectorConfigExtraMetaData;
                     }
                     if (argv.presetRecordAspects) {
-                        configData.presetRecordAspects = argv.presetRecordAspects as JsonConnectorConfigPresetAspect[];
+                        configData.presetRecordAspects =
+                            argv.presetRecordAspects as JsonConnectorConfigPresetAspect[];
                     }
                     if (argv.customJsFilterCode) {
-                        configData.customJsFilterCode = argv.customJsFilterCode as string;
+                        configData.customJsFilterCode =
+                            argv.customJsFilterCode as string;
                     }
                 }
             } else {
@@ -144,18 +150,17 @@ export default class JsonConnector {
     async createAspectDefinitions(): Promise<ConnectionResult> {
         const result = new ConnectionResult();
 
-        const allAspectDefinitions = this.transformer.getRequiredAspectDefinitions();
+        const allAspectDefinitions =
+            this.transformer.getRequiredAspectDefinitions();
 
-        const aspectBuilderPage = AsyncPage.single<AspectDefinition[]>(
-            allAspectDefinitions
-        );
+        const aspectBuilderPage =
+            AsyncPage.single<AspectDefinition[]>(allAspectDefinitions);
         await forEachAsync(
             aspectBuilderPage,
             this.maxConcurrency,
             async (aspectDefinition) => {
-                const aspectDefinitionOrError = await this.registry.putAspectDefinition(
-                    aspectDefinition
-                );
+                const aspectDefinitionOrError =
+                    await this.registry.putAspectDefinition(aspectDefinition);
                 if (aspectDefinitionOrError instanceof Error) {
                     result.aspectDefinitionFailures.push(
                         new AspectCreationFailure(
@@ -307,9 +312,8 @@ export default class JsonConnector {
             }
 
             if (this.source.hasFirstClassOrganizations) {
-                const publisher = this.source.getJsonDatasetPublisherId(
-                    dataset
-                );
+                const publisher =
+                    this.source.getJsonDatasetPublisherId(dataset);
                 if (publisher) {
                     record.aspects["dataset-publisher"] = {
                         publisher: new ConnectorRecordId(
@@ -324,10 +328,11 @@ export default class JsonConnector {
                     dataset
                 );
                 if (publisher) {
-                    const publisherId = this.transformer.getIdFromJsonOrganization(
-                        publisher,
-                        this.source.id
-                    );
+                    const publisherId =
+                        this.transformer.getIdFromJsonOrganization(
+                            publisher,
+                            this.source.id
+                        );
                     if (publisherId) {
                         if (
                             this.recordFilterFunction(
@@ -409,7 +414,8 @@ export default class JsonConnector {
     async run(): Promise<ConnectionResult> {
         const aspectResult = await this.createAspectDefinitions();
         const organizationResult = await this.createOrganizations();
-        const datasetAndDistributionResult = await this.createDatasetsAndDistributions();
+        const datasetAndDistributionResult =
+            await this.createDatasetsAndDistributions();
         const recordsTrimmedResult = await this.trimRecords();
 
         return ConnectionResult.combine(
