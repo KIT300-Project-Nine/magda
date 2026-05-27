@@ -24,7 +24,7 @@ async function retrieveDatasets(question: string, limit: number = 5) {
             question
         )
     ) {
-        return "The requested record is not available or you may not have access.";
+        return "The requested record is not available or you may not have access, please check that you are signed in.";
     }
 
     // Show real results only if we have reasonably good matches
