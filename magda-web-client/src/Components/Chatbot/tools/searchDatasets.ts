@@ -20,18 +20,6 @@ async function retrieveDatasets(
 
     const result = await searchDatasetsApi({ q: question, limit });
 
-    // Show friendly message if results are weak or query is broad/generic (client suggestion)
-    if (
-        !result?.dataSets?.length ||
-        result.dataSets.length <= 3 ||
-        question.length < 8 ||
-        /abc123|secret|nonexistent|foobar|test123|xyz999|madeup|random123/i.test(
-            question
-        )
-    ) {
-        return "The requested record is not available or you may not have access, please check that you are signed in.";
-    }
-
     // Show real results only if we have reasonably good matches
     const filteredDataSets = result.dataSets.filter(
         (item) =>
@@ -47,9 +35,11 @@ async function retrieveDatasets(
     }
 
     const datasets = filteredDataSets.map((item) => {
-        const desc = (item?.description?.length > MAX_DESC_DISPLAY_LENGTH
-            ? item.description.substring(0, MAX_DESC_DISPLAY_LENGTH + 1) + "..."
-            : item.description
+        const desc = (
+            item?.description?.length > MAX_DESC_DISPLAY_LENGTH
+                ? item.description.substring(0, MAX_DESC_DISPLAY_LENGTH + 1) +
+                  "..."
+                : item.description
         ).replace(/\n|\r|<br\s*\/>/g, " ");
 
         const datasetId = encodeURIComponent(
@@ -71,7 +61,7 @@ async function retrieveDatasets(
 const searchDatasets: WebLLMTool = {
     name: "searchDatasets",
     func: async function (queryString: string) {
-        const context = (this as unknown) as ChainInput;
+        const context = this as unknown as ChainInput;
         const { queue } = context;
         queue.push(createChatEventMessageCompleteMsg("Searching datasets..."));
 
