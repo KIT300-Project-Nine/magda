@@ -5,7 +5,7 @@
     &__trigger {
         background: none;
         border: none;
-        color: inherit;
+        color: #fff;
         font: inherit;
         cursor: pointer;
         padding: 0;
@@ -24,9 +24,6 @@
 
     &__dropdown {
         position: fixed;
-        top: auto;
-        right: 16px;
-        margin-top: 4px;
         background: #fff;
         border: 1px solid #ddd;
         border-radius: 4px;

@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
+import ReactDOM from "react-dom";
 import { useSelector, useDispatch } from "react-redux";
 import { StateType } from "../../reducers/reducer";
 import {
@@ -36,6 +37,11 @@ const AccountNavbar: React.FC<PropsType> = ({ skipLink }) => {
     const [open, setOpen] = useState(false);
     const [switching, setSwitching] = useState(false);
     const dropdownRef = useRef<HTMLLIElement>(null);
+    const triggerRef = useRef<HTMLButtonElement>(null);
+    const [dropdownPos, setDropdownPos] = useState<{
+        top: number;
+        left: number;
+    }>({ top: 0, left: 0 });
 
     const currentLabel =
         DEMO_USERS.find((u) => u.id === currentUser?.id)?.label || "Anonymous";
@@ -54,7 +60,7 @@ const AccountNavbar: React.FC<PropsType> = ({ skipLink }) => {
             document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
-    const switchUser = async (user: typeof DEMO_USERS[number]) => {
+    const switchUser = async (user: (typeof DEMO_USERS)[number]) => {
         setSwitching(true);
         try {
             if (!user.username) {
@@ -104,41 +110,56 @@ const AccountNavbar: React.FC<PropsType> = ({ skipLink }) => {
             id={skipLink ? "nav" : undefined}
         >
             <button
+                ref={triggerRef}
                 className="account-navbar__trigger"
-                onClick={() => setOpen(!open)}
+                onClick={() => {
+                    if (!open && triggerRef.current) {
+                        const rect = triggerRef.current.getBoundingClientRect();
+                        setDropdownPos({
+                            top: rect.bottom + 4,
+                            left: rect.left
+                        });
+                    }
+                    setOpen(!open);
+                }}
                 aria-expanded={open}
                 aria-haspopup="true"
             >
                 <span>{currentLabel}</span>
                 <span className="account-navbar__caret">&#9662;</span>
             </button>
-            {open && (
-                <ul className="account-navbar__dropdown">
-                    {DEMO_USERS.map((user) => (
-                        <li key={user.label}>
-                            <button
-                                className={`account-navbar__option ${
-                                    user.id === (currentUser?.id || "")
-                                        ? "account-navbar__option--active"
-                                        : ""
-                                }`}
-                                onClick={() => switchUser(user)}
-                                disabled={
-                                    switching ||
-                                    user.id === (currentUser?.id || "")
-                                }
-                            >
-                                {user.label}
-                                {user.id === (currentUser?.id || "") && (
-                                    <span className="account-navbar__check">
-                                        &#10003;
-                                    </span>
-                                )}
-                            </button>
-                        </li>
-                    ))}
-                </ul>
-            )}
+            {open &&
+                ReactDOM.createPortal(
+                    <ul
+                        className="account-navbar__dropdown"
+                        style={{ top: dropdownPos.top, left: dropdownPos.left }}
+                    >
+                        {DEMO_USERS.map((user) => (
+                            <li key={user.label}>
+                                <button
+                                    className={`account-navbar__option ${
+                                        user.id === (currentUser?.id || "")
+                                            ? "account-navbar__option--active"
+                                            : ""
+                                    }`}
+                                    onClick={() => switchUser(user)}
+                                    disabled={
+                                        switching ||
+                                        user.id === (currentUser?.id || "")
+                                    }
+                                >
+                                    {user.label}
+                                    {user.id === (currentUser?.id || "") && (
+                                        <span className="account-navbar__check">
+                                            &#10003;
+                                        </span>
+                                    )}
+                                </button>
+                            </li>
+                        ))}
+                    </ul>,
+                    document.body
+                )}
         </li>
     );
 };

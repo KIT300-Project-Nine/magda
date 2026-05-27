@@ -41,6 +41,7 @@
     &.home {
         .search-btn {
             svg {
+                filter: invert(100%);
                 path {
                     fill: #000000;
                 }
